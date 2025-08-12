@@ -84,6 +84,9 @@ func getTask(bucket *bolt.Bucket) (Task, error) {
 
 // Save fields from ListInfo struct into the bucket
 func saveInfo(bucket *bolt.Bucket, info ListInfo) error {
+	if info.Name == "" {
+		return fmt.Errorf("name is required")
+	}
 	err := bucket.Put([]byte("name"), []byte(info.Name))
 	if err != nil {
 		return err
@@ -239,4 +242,75 @@ func copyBucket(src, dst *bolt.Bucket) error {
 		}
 		return dst.Put(k, v)
 	})
+}
+
+func getCurrListName(tx *bolt.Tx) string {
+	currentList := tx.Bucket([]byte("currentList"))
+	if currentList == nil {
+		return ""
+	}
+
+	nameBytes := currentList.Get([]byte("name"))
+	if nameBytes == nil {
+		return ""
+	}
+
+	return string(nameBytes)
+}
+
+func setCurrListName(tx *bolt.Tx, name string) error {
+	currentList := tx.Bucket([]byte("currentList"))
+	if currentList == nil {
+		return fmt.Errorf("currentList bucket not found - likely issue with database initialization")
+	}
+
+	return currentList.Put([]byte("name"), []byte(name))
+}
+
+// delete all tasks that are marked as done
+func cleanList(b *bolt.Bucket) error {
+	dataBucket := b.Bucket([]byte("data"))
+	if dataBucket == nil {
+		return fmt.Errorf("data bucket not found")
+	}
+
+	// remove tasks that are done
+	var numRemoved int
+	err := dataBucket.ForEach(func(k, v []byte) error {
+		if v == nil {
+			taskBucket := dataBucket.Bucket(k)
+			if taskBucket == nil {
+				return fmt.Errorf("task bucket %s not found", string(k))
+			}
+
+			task, err := getTask(taskBucket)
+			if err != nil {
+				return nil // skip if task bucket is empty or doesn't exist
+			}
+
+			if task.Done {
+				numRemoved++
+				return dataBucket.DeleteBucket(k)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	// update info with number of total and done tasks
+	infoBucket := b.Bucket([]byte("info"))
+	if infoBucket == nil {
+		return fmt.Errorf("info bucket not found")
+	}
+
+	info, err := getInfo(infoBucket)
+	if err != nil {
+		return err
+	}
+
+	info.NumTasks -= numRemoved
+	info.NumDone = 0
+	return saveInfo(infoBucket, info)
 }

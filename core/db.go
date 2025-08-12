@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"os"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -38,16 +39,32 @@ type DB struct {
 
 // ---------------------------- Setup Functions --------------------------------
 
+// Open DB located in user's default config dir.
+func InitDefaultDB() (*DB, error) {
+	dbPath, err := os.UserConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	return InitDB(dbPath + "/listly")
+}
+
 // Initialize the database. For testing purposes, a custom path can be provided,
 // but it is recommended to use `os.UserConfigDir()`.
 func InitDB(path string) (*DB, error) {
-	// load and/or create the database
-	dbPath := path + "/listly.db"
-	db, err := bolt.Open(dbPath, 0600, nil)
+	// Create the directories for the DB
+	err := os.MkdirAll(path, 0700)
 	if err != nil {
 		return nil, err
 	}
 
+	// Open the DB
+	dbPath := path + "/listly.db"
+	db, err := bolt.Open(dbPath, 0700, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate DB with the top level buckets if they don't yet exist
 	err = db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte("currentList"))
 		if err != nil {
@@ -66,6 +83,20 @@ func InitDB(path string) (*DB, error) {
 	}
 
 	return &DB{BoltDB: db}, nil
+}
+
+// A utility function that simplifies the usage of the default database.
+func WithDefaultDB(fn func(db *DB)) {
+	db, err := InitDefaultDB()
+	if err != nil {
+		Abort(fmt.Sprintf("Error retrieving data: %v", err))
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			fmt.Printf("Error closing database: %v\n", err)
+		}
+	}()
+	fn(db)
 }
 
 // ------------------------ business logic abstractions --------------------------------
@@ -142,19 +173,9 @@ func (db *DB) GetList(name string) (List, error) {
 
 // get the name of the currently active list
 func (db *DB) GetCurrentListName() (string, error) {
-	name := ""
+	var name string
 	err := db.BoltDB.View(func(tx *bolt.Tx) error {
-		currentList := tx.Bucket([]byte("currentList"))
-		if currentList == nil {
-			return fmt.Errorf("currentList bucket not found - likely issue with database initialization")
-		}
-
-		nameBytes := currentList.Get([]byte("name"))
-		if nameBytes == nil {
-			return fmt.Errorf("current list name not found")
-		}
-
-		name = string(nameBytes)
+		name = getCurrListName(tx)
 		return nil
 	})
 	return name, err
@@ -163,12 +184,10 @@ func (db *DB) GetCurrentListName() (string, error) {
 // set the name of the currently active list
 func (db *DB) SetCurrentListName(name string) error {
 	return db.BoltDB.Update(func(tx *bolt.Tx) error {
-		currentList := tx.Bucket([]byte("currentList"))
-		if currentList == nil {
-			return fmt.Errorf("currentList bucket not found - likely issue with database initialization")
+		if name == "" {
+			return fmt.Errorf("cannot have empty name")
 		}
-
-		return currentList.Put([]byte("name"), []byte(name))
+		return setCurrListName(tx, name)
 	})
 }
 
@@ -206,40 +225,184 @@ func (db *DB) SaveList(list List) error {
 // recreate the bucket with the new name.
 func (db *DB) RenameList(oldName, newName string) error {
 	return db.BoltDB.Update(func(tx *bolt.Tx) error {
-		listsBucket := tx.Bucket([]byte("lists"))
-		if listsBucket == nil {
+		allLists := tx.Bucket([]byte("lists"))
+		if allLists == nil {
 			return fmt.Errorf("lists bucket not found")
 		}
 
-		oldBucket := listsBucket.Bucket([]byte(oldName))
+		// Get the old list bucket
+		oldBucket := allLists.Bucket([]byte(oldName))
 		if oldBucket == nil {
 			return fmt.Errorf("old list %s not found", oldName)
 		}
 
 		// Create new bucket with newName
-		newBucket, err := listsBucket.CreateBucket([]byte(newName))
+		newBucket, err := allLists.CreateBucket([]byte(newName))
+		if err != nil {
+			return fmt.Errorf("error creating new bucket %s: %w", newName, err)
+		}
+
+		// Recursively copy all keys/sub-buckets
+		if err = copyBucket(oldBucket, newBucket); err != nil {
+			return fmt.Errorf("error copying bucket %s to %s: %w", oldName, newName, err)
+		}
+
+		// Delete old bucket
+		err = allLists.DeleteBucket([]byte(oldName))
 		if err != nil {
 			return err
 		}
 
-		// Recursively copy all keys/sub-buckets
-		if err := copyBucket(oldBucket, newBucket); err != nil {
+		// update info in the new bucket
+		listBucket := allLists.Bucket([]byte(newName))
+		if listBucket == nil {
+			return fmt.Errorf("list bucket %s not found", newName)
+		}
+		infoBucket := listBucket.Bucket([]byte("info"))
+		if infoBucket == nil {
+			return fmt.Errorf("info bucket not found for list %s", newName)
+		}
+		listInfo, err := getInfo(infoBucket)
+		if err != nil {
+			return err
+		}
+		listInfo.Name = newName
+		err = saveInfo(infoBucket, listInfo)
+		if err != nil {
 			return err
 		}
 
-		// Delete old bucket
-		return listsBucket.DeleteBucket([]byte(oldName))
+		// if the list being renamed is the current list, update the current list name
+		currListName := getCurrListName(tx)
+		if currListName == oldName {
+			return setCurrListName(tx, newName)
+		}
+		return nil
 	})
 }
 
 // remove the list with the given name
-func (db *DB) DeleteList(name string) error {
+func (db *DB) DeleteLists(names []string) error {
 	return db.BoltDB.Update(func(tx *bolt.Tx) error {
-		listsBucket := tx.Bucket([]byte("lists"))
-		if listsBucket == nil {
+		allLists := tx.Bucket([]byte("lists"))
+		if allLists == nil {
 			return fmt.Errorf("lists bucket not found")
 		}
 
-		return listsBucket.DeleteBucket([]byte(name))
+		currListName := getCurrListName(tx)
+		for _, name := range names {
+			if name == currListName {
+				setCurrListName(tx, "")
+			}
+			allLists.DeleteBucket([]byte(name))
+		}
+		return nil
 	})
+}
+
+// remove all lists
+func (db *DB) DeleteAllLists() error {
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		allLists := tx.Bucket([]byte("lists"))
+		if allLists == nil {
+			return fmt.Errorf("lists bucket not found")
+		}
+
+		setCurrListName(tx, "")
+		return allLists.ForEach(func(k, v []byte) error {
+			return allLists.DeleteBucket(k)
+		})
+	})
+}
+
+// delete the current list
+func (db *DB) DeleteCurrentList() error {
+	name, err := db.GetCurrentListName()
+	if err != nil {
+		return err
+	}
+
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		allLists := tx.Bucket([]byte("lists"))
+		if allLists == nil {
+			return fmt.Errorf("lists bucket not found")
+		}
+
+		setCurrListName(tx, "")
+		return allLists.DeleteBucket([]byte(name))
+	})
+}
+
+// Clean up completed tasks in the specified lists
+func (db *DB) CleanLists(names []string) error {
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		allBuckets := tx.Bucket([]byte("lists"))
+		if allBuckets == nil {
+			return fmt.Errorf("lists bucket not found")
+		}
+
+		for _, name := range names {
+			listBucket := allBuckets.Bucket([]byte(name))
+			if listBucket == nil {
+				continue // skip if the list does not exist
+			}
+
+			err := cleanList(listBucket)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// Clean up completed tasks in all lists
+func (db *DB) CleanAllLists() error {
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		allBuckets := tx.Bucket([]byte("lists"))
+		if allBuckets == nil {
+			return fmt.Errorf("lists bucket not found")
+		}
+
+		return allBuckets.ForEach(func(k, v []byte) error {
+			listBucket := allBuckets.Bucket(k)
+			if listBucket == nil {
+				return nil // skip if the list does not exist
+			}
+
+			return cleanList(listBucket)
+		})
+	})
+}
+
+// Clean up completed tasks in the current list
+func (db *DB) CleanCurrentList() error {
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		name := getCurrListName(tx)
+
+		allBuckets := tx.Bucket([]byte("lists"))
+		if allBuckets == nil {
+			return fmt.Errorf("lists bucket not found")
+		}
+
+		listBucket := allBuckets.Bucket([]byte(name))
+		if listBucket == nil {
+			return nil // skip if the list does not exist
+		}
+		return cleanList(listBucket)
+	})
+}
+
+func (db *DB) ListExists(name string) (bool, error) {
+	allInfo, err := db.GetInfo()
+	if err != nil {
+		return false, err
+	}
+
+	_, ok := allInfo[name]
+	return ok, nil
+}
+
+func (db *DB) Close() error {
+	return db.BoltDB.Close()
 }

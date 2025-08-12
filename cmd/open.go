@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var openCmd = &cobra.Command{
+var OpenCmd = &cobra.Command{
 	Use:   "open [list name]",
 	Short: "Open the TUI for the specified list or the current list if no list is specified.",
 	Args:  cobra.MaximumNArgs(1),
@@ -18,9 +18,10 @@ var openCmd = &cobra.Command{
 			listName = "current list" // replace with curr list retrieval
 		}
 		fmt.Printf("Opening TUI for list: %s\n", listName) // delete later
+		fmt.Printf("\n\tTODO NOT IMPLEMENTED\n\n")
 	},
 }
 
 func setUpOpen() {
-	RootCmd.AddCommand(openCmd)
+	RootCmd.AddCommand(OpenCmd)
 }

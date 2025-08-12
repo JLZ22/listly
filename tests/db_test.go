@@ -73,15 +73,8 @@ func TestRenameList(t *testing.T) {
 	defer cleanup()
 
 	// Setup list bucket manually for rename test
-	err := db.BoltDB.Update(func(tx *bbolt.Tx) error {
-		lists := tx.Bucket([]byte("lists"))
-		l, err := lists.CreateBucket([]byte("old"))
-		if err != nil {
-			return err
-		}
-		_, err = l.CreateBucket([]byte("info"))
-		return err
-	})
+	dummyList := core.NewList("old")
+	err := db.SaveList(dummyList)
 	require.NoError(t, err)
 
 	err = db.RenameList("old", "new")
@@ -108,7 +101,7 @@ func TestDeleteList(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = db.DeleteList("todelete")
+	err = db.DeleteLists([]string{"todelete"})
 	require.NoError(t, err)
 
 	err = db.BoltDB.View(func(tx *bbolt.Tx) error {
@@ -132,9 +125,9 @@ func TestGetCurrentListName_NoNameSet(t *testing.T) {
 	db, cleanup := setupTempDB(t)
 	defer cleanup()
 
-	_, err := db.GetCurrentListName()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "current list name not found")
+	curr, err := db.GetCurrentListName()
+	require.NoError(t, err)
+	require.Equal(t, "", curr) // No current list should return empty string
 }
 
 func TestGetList_NotFound(t *testing.T) {
@@ -153,16 +146,6 @@ func TestRenameList_OldNotFound(t *testing.T) {
 	err := db.RenameList("missing", "new")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "old list missing not found")
-}
-
-func TestDeleteList_NotFound(t *testing.T) {
-	db, cleanup := setupTempDB(t)
-	defer cleanup()
-
-	// Try deleting a bucket that doesn't exist
-	err := db.DeleteList("nope")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "bucket not found")
 }
 
 func TestGetInfo_MissingInfoBucket(t *testing.T) {
