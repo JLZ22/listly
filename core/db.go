@@ -86,17 +86,17 @@ func InitDB(path string) (*DB, error) {
 }
 
 // A utility function that simplifies the usage of the default database.
-func WithDefaultDB(fn func(db *DB)) {
+func WithDefaultDB(fn func(db *DB) error) error {
 	db, err := InitDefaultDB()
 	if err != nil {
-		Abort(fmt.Sprintf("Error retrieving data: %v", err))
+		return fmt.Errorf("could not initialize database due to the following error\n\t %v", err)
 	}
 	defer func() {
 		if err := db.Close(); err != nil {
-			fmt.Printf("Error closing database: %v\n", err)
+			fmt.Printf("could not close database due to the following error\n\t %v\n", err)
 		}
 	}()
-	fn(db)
+	return fn(db)
 }
 
 // ------------------------ business logic abstractions --------------------------------
@@ -239,12 +239,12 @@ func (db *DB) RenameList(oldName, newName string) error {
 		// Create new bucket with newName
 		newBucket, err := allLists.CreateBucket([]byte(newName))
 		if err != nil {
-			return fmt.Errorf("error creating new bucket %s: %w", newName, err)
+			return fmt.Errorf("could not create new bucket %s due to the following error\n\t %w", newName, err)
 		}
 
 		// Recursively copy all keys/sub-buckets
 		if err = copyBucket(oldBucket, newBucket); err != nil {
-			return fmt.Errorf("error copying bucket %s to %s: %w", oldName, newName, err)
+			return fmt.Errorf("could not copy bucket %s to %s due to the following error\n\t %w", oldName, newName, err)
 		}
 
 		// Delete old bucket

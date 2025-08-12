@@ -10,12 +10,16 @@ var NewCmd = &cobra.Command{
 	Use:   "new [list name]",
 	Short: "Create a new todo list.",
 	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		core.WithDefaultDB(func(db *core.DB) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return core.WithDefaultDB(func(db *core.DB) error {
 			for _, listName := range args {
-				createNewList(db, listName)
+				err := createNewList(db, listName)
+				if err != nil {
+					return err
+				}
 			}
 			core.Success(fmt.Sprintf("Created new todo-lists:\n%s", core.ListLists(args, "  ")))
+			return nil
 		})
 	},
 }
@@ -24,22 +28,23 @@ func setUpNew() {
 	RootCmd.AddCommand(NewCmd)
 }
 
-func createNewList(db *core.DB, listName string) {
+func createNewList(db *core.DB, listName string) error {
 	exists, err := db.ListExists(listName)
 	if err != nil {
-		core.Abort(fmt.Sprintf("Error accessing the database: %v", err))
+		return err
 	}
 	if exists {
-		core.Abort(fmt.Sprintf("List \"%s\" already exists.", listName))
+		return fmt.Errorf("list \"%s\" already exists", listName)
 	}
 
 	newList := core.NewList(listName)
 	err = db.SaveList(newList)
 	if err != nil {
-		core.Abort(fmt.Sprintf("Error saving new list: %v", err))
+		return fmt.Errorf("could not save new list due to the following\n\t %v", err)
 	}
 	err = db.SetCurrentListName(listName)
 	if err != nil {
-		core.Abort(fmt.Sprintf("Error setting current list name: %v", err))
+		return fmt.Errorf("could not set current list name due to the following\n\t %v", err)
 	}
+	return nil
 }

@@ -16,22 +16,22 @@ var ListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Display the names of all todo lists along with their task counts.",
 	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		core.WithDefaultDB(func(db *core.DB) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return core.WithDefaultDB(func(db *core.DB) error {
 			allInfo, err := db.GetInfo()
 			if err != nil {
-				core.Abort(fmt.Sprintf("Failed to retrieve lists: %v", err))
+				return fmt.Errorf("failed to retrieve lists: %v", err)
 			}
 
 			// end early if no lists found
 			if len(allInfo) == 0 {
-				core.Abort("No lists found. Create a new one with\n\n\tlistly new <list name> ...")
+				return fmt.Errorf("no lists found - create a new one with\n\n\tlistly new <list name> ... ")
 			}
 
 			// Find the maximum length of list names for formatting
 			currentListName, err := db.GetCurrentListName()
 			if err != nil {
-				core.Abort(fmt.Sprintf("Failed to retrieve current list name: %v", err))
+				return fmt.Errorf("failed to retrieve current list name: %v", err)
 			}
 			maxLen := 12
 			for _, info := range allInfo {
@@ -84,6 +84,7 @@ var ListCmd = &cobra.Command{
 					)
 				}
 			}
+			return nil
 		})
 	},
 }

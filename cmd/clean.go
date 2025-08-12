@@ -13,13 +13,13 @@ var CleanCmd = &cobra.Command{
 	Use:   "clean [list1 names...]",
 	Short: "Remove all completed tasks from the specified lists or just the current list if none are specified.",
 	Args:  cobra.ArbitraryArgs,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if cleanAll {
-			cleanAllLists()
+			return cleanAllLists()
 		} else if len(args) > 0 {
-			cleanSpecifiedLists(args)
+			return cleanSpecifiedLists(args)
 		} else {
-			cleanCurrentList()
+			return cleanCurrentList()
 		}
 	},
 }
@@ -29,41 +29,44 @@ func setUpClean() {
 	CleanCmd.Flags().BoolVarP(&cleanAll, "all", "a", false, "Remove all completed tasks from all lists.")
 }
 
-func cleanAllLists() {
-	core.WithDefaultDB(func(db *core.DB) {
+func cleanAllLists() error {
+	return core.WithDefaultDB(func(db *core.DB) error {
 		err := db.CleanAllLists()
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error cleaning all todo-lists: %v", err))
+			return fmt.Errorf(" cleaning all todo-lists: %v", err)
 		}
 		core.Success("Cleaned completed tasks from all todo-lists.")
+		return nil
 	})
 }
 
-func cleanCurrentList() {
-	core.WithDefaultDB(func(db *core.DB) {
+func cleanCurrentList() error {
+	return core.WithDefaultDB(func(db *core.DB) error {
 		current, err := db.GetCurrentListName()
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error accessing current todo-list: %v", err))
+			return fmt.Errorf("could not access current todo-list due to the following error\n\t %v", err)
 		}
 		if current == "" {
-			core.Abort("No current todo-list is set.")
+			return fmt.Errorf("no current todo-list is set")
 		}
 
 		err = db.CleanCurrentList()
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error cleaning current todo-list: %v", err))
+			return fmt.Errorf("could not clean current todo-list due to the following error\n\t %v", err)
 		}
 
 		core.Success(fmt.Sprintf("Cleaned the following:\n%s", core.ListLists([]string{current}, "  ")))
+		return nil
 	})
 }
 
-func cleanSpecifiedLists(names []string) {
-	core.WithDefaultDB(func(db *core.DB) {
+func cleanSpecifiedLists(names []string) error {
+	return core.WithDefaultDB(func(db *core.DB) error {
 		err := db.CleanLists(names)
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error cleaning specified todo-lists: %v", err))
+			return fmt.Errorf("could not clean specified todo-lists due to the following error\n\t %v", err)
 		}
 		core.Success(fmt.Sprintf("Cleaned the following:\n%s", core.ListLists(names, "  ")))
+		return nil
 	})
 }

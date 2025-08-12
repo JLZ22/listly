@@ -13,13 +13,13 @@ var DeleteCmd = &cobra.Command{
 	Use:   "delete [list name]",
 	Short: "Delete the specified list.",
 	Args:  cobra.ArbitraryArgs,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string)  error{
 		if deleteAll {
-			deleteAllLists()
+			return deleteAllLists()
 		} else if len(args) == 0 {
-			deleteCurrentList()
+			return deleteCurrentList()
 		} else {
-			deleteSpecifiedLists(args)
+			return deleteSpecifiedLists(args)
 		}
 	},
 }
@@ -29,41 +29,44 @@ func setUpDelete() {
 	DeleteCmd.Flags().BoolVarP(&deleteAll, "all", "a", false, "Delete all lists")
 }
 
-func deleteAllLists() {
-	core.WithDefaultDB(func(db *core.DB) {
+func deleteAllLists() error {
+	return core.WithDefaultDB(func(db *core.DB) error {
 		err := db.DeleteAllLists()
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error deleting all todo-lists: %v", err))
+			return fmt.Errorf("could not delete all todo-lists due to the following error\n\t %v", err)
 		}
 		core.Success("Deleted all todo-lists.")
+		return nil
 	})
 }
 
-func deleteCurrentList() {
-	core.WithDefaultDB(func(db *core.DB) {
+func deleteCurrentList() error {
+	return core.WithDefaultDB(func(db *core.DB) error {
 		current, err := db.GetCurrentListName()
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error accessing current todo-list: %v", err))
+			return fmt.Errorf("could not access current todo-list due to the following error\n\t %v", err)
 		}
 		if current == "" {
-			core.Abort("No current todo-list is set.")
+			return fmt.Errorf("no current todo-list is set")
 		}
 
 		err = db.DeleteCurrentList()
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error deleting current todo-list: %v", err))
+			return fmt.Errorf("could not delete current todo-list due to the following error\n\t %v", err)
 		}
 
 		core.Success(fmt.Sprintf("Deleted the following:\n%s", core.ListLists([]string{current}, "  ")))
+		return nil
 	})
 }
 
-func deleteSpecifiedLists(names []string) {
-	core.WithDefaultDB(func(db *core.DB) {
+func deleteSpecifiedLists(names []string) error{
+	return core.WithDefaultDB(func(db *core.DB) error {
 		err := db.DeleteLists(names)
 		if err != nil {
-			core.Abort(fmt.Sprintf("Error deleting specified todo-lists: %v", err))
+			return fmt.Errorf("could not delete specified todo-lists due to the following error\n\t %v", err)
 		}
 		core.Success(fmt.Sprintf("Deleted the following:\n%s", core.ListLists(names, "  ")))
+		return nil
 	})
 }

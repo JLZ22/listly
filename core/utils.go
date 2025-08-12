@@ -2,17 +2,10 @@ package core
 
 import (
 	"fmt"
-	"os"
 )
-
-func Abort(msg string) {
-	fmt.Println("Abort!", msg)
-	os.Exit(1)
-}
 
 func Success(msg string) {
 	fmt.Println("Success!", msg)
-	os.Exit(0)
 }
 
 func ListLists(lists []string, tab string) string {
