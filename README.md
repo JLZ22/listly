@@ -18,16 +18,16 @@ WIP
 | ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `listly open`                         | Open the TUI for the current list - fails if no current list exists.                                 |
 | `listly open <list name>`             | Open the specified list in the TUI, and switch current list to it - fails if the list does not exist |
-| `listly new <list name>`              | Create a new list with the specified name - fails if the list already exists                         |
+| `listly new <list name> ...`          | Create a new list with the specified name(s) - fails if any of the list(s) already exists            |
 | `listly switch <list name>`           | Switch to the specified list in the TUI - fails if the list does not exist                           |
 | `listly show`                         | Print info about the current list and all tasks in it                                                |
 | `listly show <list name>`             | Print info about the specified list and all tasks in it                                              |
 | `listly list`                         | Print name of all lists and their task counts                                                        |
 | `listly clean`                        | Remove all completed tasks from the current list                                                     |
-| `listly clean <list name>`            | Remove all completed tasks from the specified list                                                   |
+| `listly clean <list name> ...`        | Remove all completed tasks from the specified list(s)                                                |
 | `listly clean -a, --all`              | Remove all completed tasks from all lists                                                            |
 | `listly rename <old name> <new name>` | Rename a list from <old name> to <new name> - fails if the new name already exists                   |
-| `listly delete <list name>`           | Delete the specified list - fails if the list does not exist - requires confirmation                 |
+| `listly delete <list name>`           | Delete the specified list(s) - fails if any of the list(s) do not exist                              |
 
 ### TUI Controls
 
