@@ -65,6 +65,7 @@ func (l *List) NewTask(description string, done bool) (int, error) {
 	}
 
 	l.Tasks[task.Id] = &task
+	l.TaskIds = append(l.TaskIds, task.Id)
 	l.Info.NumTasks++
 	if task.Done {
 		l.Info.NumDone++
