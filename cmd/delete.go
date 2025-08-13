@@ -12,10 +12,12 @@ var deleteAll bool
 var DeleteCmd = &cobra.Command{
 	Use:   "delete [list name]",
 	Short: "Delete the specified list.",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if deleteAll {
 			return deleteAllLists()
+		} else if len(args) == 0 {
+			return cmd.Help()
 		} else {
 			return deleteSpecifiedLists(args)
 		}
