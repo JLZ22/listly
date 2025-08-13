@@ -12,12 +12,10 @@ var deleteAll bool
 var DeleteCmd = &cobra.Command{
 	Use:   "delete [list name]",
 	Short: "Delete the specified list.",
-	Args:  cobra.ArbitraryArgs,
-	RunE: func(cmd *cobra.Command, args []string)  error{
+	Args:  cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if deleteAll {
 			return deleteAllLists()
-		} else if len(args) == 0 {
-			return deleteCurrentList()
 		} else {
 			return deleteSpecifiedLists(args)
 		}
@@ -40,33 +38,41 @@ func deleteAllLists() error {
 	})
 }
 
-func deleteCurrentList() error {
+func deleteSpecifiedLists(names []string) error {
 	return core.WithDefaultDB(func(db *core.DB) error {
-		current, err := db.GetCurrentListName()
-		if err != nil {
-			return fmt.Errorf("could not access current todo-list due to the following error\n\t %v", err)
-		}
-		if current == "" {
-			return fmt.Errorf("no current todo-list is set")
+		// separate the lists that exist vs the ones that don't
+		found := []string{}
+		notFound := []string{}
+		seen := map[string]struct{}{}
+		for _, name := range names {
+			_, ok := seen[name]
+			if ok {
+				continue
+			}
+			seen[name] = struct{}{}
+
+			exists, err := db.ListExists(name)
+			if err != nil {
+				return fmt.Errorf("could not check if list %s exists due to the following error\n\t %v", name, err)
+			}
+
+			if exists {
+				found = append(found, name)
+			} else {
+				notFound = append(notFound, name)
+			}
 		}
 
-		err = db.DeleteCurrentList()
-		if err != nil {
-			return fmt.Errorf("could not delete current todo-list due to the following error\n\t %v", err)
-		}
-
-		core.Success(fmt.Sprintf("Deleted the following:\n%s", core.ListLists([]string{current}, "  ")))
-		return nil
-	})
-}
-
-func deleteSpecifiedLists(names []string) error{
-	return core.WithDefaultDB(func(db *core.DB) error {
-		err := db.DeleteLists(names)
+		// Delete the found lists
+		err := db.DeleteLists(found)
 		if err != nil {
 			return fmt.Errorf("could not delete specified todo-lists due to the following error\n\t %v", err)
 		}
-		core.Success(fmt.Sprintf("Deleted the following:\n%s", core.ListLists(names, "  ")))
+
+		core.Success(fmt.Sprintf("Deleted the following:\n%s", core.ListLists(found, "  ")))
+		if len(notFound) > 0 {
+			fmt.Printf("Could not find the following:\n%s", core.ListLists(notFound, "  "))
+		}
 		return nil
 	})
 }

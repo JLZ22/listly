@@ -315,24 +315,6 @@ func (db *DB) DeleteAllLists() error {
 	})
 }
 
-// delete the current list
-func (db *DB) DeleteCurrentList() error {
-	name, err := db.GetCurrentListName()
-	if err != nil {
-		return err
-	}
-
-	return db.BoltDB.Update(func(tx *bolt.Tx) error {
-		allLists := tx.Bucket([]byte("lists"))
-		if allLists == nil {
-			return fmt.Errorf("lists bucket not found")
-		}
-
-		setCurrListName(tx, "")
-		return allLists.DeleteBucket([]byte(name))
-	})
-}
-
 // Clean up completed tasks in the specified lists
 func (db *DB) CleanLists(names []string) error {
 	return db.BoltDB.Update(func(tx *bolt.Tx) error {

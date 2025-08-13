@@ -18,7 +18,7 @@ var SwitchCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("could not check if list %s exists due to the following error\n\t %v", listName, err)
 			}
-			
+
 			if !exists {
 				return fmt.Errorf("list %s does not exist - cannot switch to it", listName)
 			}

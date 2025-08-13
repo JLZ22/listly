@@ -5,7 +5,7 @@ import (
 )
 
 func Success(msg string) {
-	fmt.Println("Success!", msg)
+	fmt.Println(msg) // this used to print a success message, but that was removed, so now this is effectively a no-op. Too lazy to refactor.
 }
 
 func ListLists(lists []string, tab string) string {
