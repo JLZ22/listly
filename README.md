@@ -47,3 +47,5 @@ WIP
 | `p`            | Paste the copied item(s) after the current item                    |
 | `w`            | Save changes                                                       |
 | `q`            | Quit the application - discard all changes, requiring confirmation |
+| `g`            | Jump to top of list                                                |
+| `G`            | Jump to last pending task                                          |
