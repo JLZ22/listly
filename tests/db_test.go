@@ -58,7 +58,8 @@ func TestSaveListAndGetList(t *testing.T) {
 	defer cleanup()
 
 	list := core.NewList("list1")
-	list.Info.Name = "list1"
+	list.NewTask("task1", false)
+	list.NewTask("task2", true)
 
 	err := db.SaveList(list)
 	require.NoError(t, err)
@@ -66,6 +67,12 @@ func TestSaveListAndGetList(t *testing.T) {
 	got, err := db.GetList("list1")
 	require.NoError(t, err)
 	require.Equal(t, "list1", got.Info.Name)
+	require.Equal(t, 2, got.Info.NumTasks)
+	require.Equal(t, 1, got.Info.NumDone)
+	require.Equal(t, 1, got.Info.NumPending)
+	require.Len(t, got.Tasks, 2)
+	require.Equal(t, "task1", got.Tasks[got.TaskIds[0]].Description)
+	require.Equal(t, "task2", got.Tasks[got.TaskIds[1]].Description)
 }
 
 func TestRenameList(t *testing.T) {

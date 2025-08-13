@@ -177,7 +177,11 @@ func getData(bucket *bolt.Bucket) (List, error) {
 	tasksMap := make(map[int]*Task)
 	usedIds := make(map[int]struct{})
 	for _, id := range taskIds {
-		task, err := getTask(taskBucket)
+		currTaskBucket := taskBucket.Bucket(itob(id))
+		if currTaskBucket == nil {
+			return list, fmt.Errorf("task bucket %d not found", id)
+		}
+		task, err := getTask(currTaskBucket)
 		if err != nil {
 			return list, err
 		}
