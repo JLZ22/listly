@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jlz22/listly/core"
 	"github.com/spf13/cobra"
 )
@@ -39,12 +41,13 @@ var ShowCmd = &cobra.Command{
 				return nil
 			}
 			completed, pending := core.SplitByCompletion(list)
-			fmt.Printf("%s\n\n", listName)
+			fmt.Printf("\n%s\n", listName)
+			fmt.Print(strings.Repeat("=", max(10, len(listName))) + "\n")
 			for _, task := range pending {
-				fmt.Printf("- [ ] %s\n", task.Description)
+				fmt.Printf("   [ ] %s\n", task.Description)
 			}
 			for _, task := range completed {
-				fmt.Printf("- [x] %s\n", task.Description)
+				fmt.Printf("   [x] %s\n", task.Description)
 			}
 			return nil
 		})
