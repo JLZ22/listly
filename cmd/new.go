@@ -23,7 +23,17 @@ var NewCmd = &cobra.Command{
 			noDup = append(noDup, listName)
 		}
 
+		
 		return core.WithDefaultDB(func(db *core.DB) error {
+			for _, listName := range noDup {
+				exists, err := db.ListExists(listName)
+				if err != nil {
+					return err
+				}
+				if exists {
+					return fmt.Errorf("list \"%s\" already exists. No new list created", listName)
+				}
+			}
 			for _, listName := range noDup {
 				err := createNewList(db, listName)
 				if err != nil {
