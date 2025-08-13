@@ -58,6 +58,7 @@ func saveTask(bucket *bolt.Bucket, task Task) error {
 	if err != nil {
 		return err
 	}
+	taskBucket.Put([]byte("id"), itob(task.Id))
 	taskBucket.Put([]byte("description"), []byte(task.Description))
 	taskBucket.Put([]byte("done"), boolToBytes(task.Done))
 	return nil
@@ -75,7 +76,12 @@ func getTask(bucket *bolt.Bucket) (Task, error) {
 	if done == nil {
 		return Task{}, fmt.Errorf("done not found")
 	}
+	id := bucket.Get([]byte("id"))
+	if id == nil {
+		return Task{}, fmt.Errorf("id not found")
+	}
 
+	task.Id = btoi(id)
 	task.Description = string(description)
 	task.Done = bytesToBool(done)
 
@@ -198,9 +204,9 @@ func getData(bucket *bolt.Bucket) (List, error) {
 // Retrieve the info and data sub-buckets associated with the bucket with
 // the given list name, and return an error for missing buckets depending
 // on the existOkay flag.
-func openList(b *bolt.Bucket, listName string, existOkay bool) (infoBucket, dataBucket *bolt.Bucket, err error) {
+func openList(b *bolt.Bucket, listName string, notExistOk bool) (infoBucket, dataBucket *bolt.Bucket, err error) {
 	creationFn := func(b *bolt.Bucket, fieldName string) (*bolt.Bucket, error) {
-		if existOkay {
+		if notExistOk {
 			return b.CreateBucketIfNotExists([]byte(fieldName))
 		}
 		out := b.Bucket([]byte(fieldName))

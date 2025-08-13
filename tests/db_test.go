@@ -1,6 +1,7 @@
 package core_test
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -58,21 +59,25 @@ func TestSaveListAndGetList(t *testing.T) {
 	defer cleanup()
 
 	list := core.NewList("list1")
-	list.NewTask("task1", false)
-	list.NewTask("task2", true)
+
+	for i := 0; i < 5; i++ {
+		list.NewTask(fmt.Sprintf("task%d", i+1), i % 2 == 0)
+		require.Equal(t, fmt.Sprintf("task%d", i+1), list.Tasks[list.TaskIds[i]].Description)
+		require.Equal(t, list.Tasks[list.TaskIds[i]].Done, i%2 == 0)
+		require.Equal(t, list.TaskIds[i], list.Tasks[list.TaskIds[i]].Id)
+	}
 
 	err := db.SaveList(list)
 	require.NoError(t, err)
 
 	got, err := db.GetList("list1")
 	require.NoError(t, err)
-	require.Equal(t, "list1", got.Info.Name)
-	require.Equal(t, 2, got.Info.NumTasks)
-	require.Equal(t, 1, got.Info.NumDone)
-	require.Equal(t, 1, got.Info.NumPending)
-	require.Len(t, got.Tasks, 2)
-	require.Equal(t, "task1", got.Tasks[got.TaskIds[0]].Description)
-	require.Equal(t, "task2", got.Tasks[got.TaskIds[1]].Description)
+	for i := 0; i < 5; i++ {
+		require.Equal(t, fmt.Sprintf("task%d", i+1), got.Tasks[got.TaskIds[i]].Description)
+		require.Equal(t, i%2 == 0, got.Tasks[got.TaskIds[i]].Done)
+		require.Equal(t, got.TaskIds[i], list.TaskIds[i])
+		require.Equal(t, got.TaskIds[i], got.Tasks[got.TaskIds[i]].Id)
+	}
 }
 
 func TestRenameList(t *testing.T) {
