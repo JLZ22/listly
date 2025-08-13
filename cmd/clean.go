@@ -31,11 +31,11 @@ func setUpClean() {
 
 func cleanAllLists() error {
 	return core.WithDefaultDB(func(db *core.DB) error {
-		err := db.CleanAllLists()
+		numCleaned, err := db.CleanAllLists()
 		if err != nil {
 			return fmt.Errorf(" cleaning all todo-lists: %v", err)
 		}
-		core.Success("Cleaned completed tasks from all todo-lists.")
+		core.Success(fmt.Sprintf("Cleaned %d completed tasks from all todo-lists.", numCleaned))
 		return nil
 	})
 }
@@ -50,12 +50,12 @@ func cleanCurrentList() error {
 			return fmt.Errorf("no current todo-list is set")
 		}
 
-		err = db.CleanCurrentList()
+		numCleaned, err := db.CleanCurrentList()
 		if err != nil {
 			return fmt.Errorf("could not clean current todo-list due to the following error\n\t %v", err)
 		}
 
-		core.Success(fmt.Sprintf("Cleaned %s", current))
+		core.Success(fmt.Sprintf("Cleaned %d completed tasks from %s", numCleaned, current))
 		return nil
 	})
 }
@@ -85,11 +85,11 @@ func cleanSpecifiedLists(names []string) error {
 			}
 		}
 
-		err := db.CleanLists(found)
+		numCleaned, err := db.CleanLists(found)
 		if err != nil {
 			return fmt.Errorf("could not clean specified todo-lists due to the following error\n\t %v", err)
 		}
-		core.Success(fmt.Sprintf("Cleaned the following:\n%s", core.ListLists(found, "  ")))
+		core.Success(fmt.Sprintf("Cleaned %d completed tasks from the following:\n%s", numCleaned, core.ListLists(found, "  ")))
 		if len(notFound) > 0 {
 			fmt.Printf("Could not find the following:\n%s", core.ListLists(notFound, "  "))
 		}

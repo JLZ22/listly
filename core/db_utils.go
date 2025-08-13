@@ -278,17 +278,22 @@ func setCurrListName(tx *bolt.Tx, name string) error {
 }
 
 // delete all tasks that are marked as done
-func cleanList(b *bolt.Bucket) error {
+func cleanList(b *bolt.Bucket) (int, error) {
 	dataBucket := b.Bucket([]byte("data"))
 	if dataBucket == nil {
-		return fmt.Errorf("data bucket not found")
+		return 0, fmt.Errorf("data bucket not found")
 	}
 
 	// remove tasks that are done
+	taskListBucket := dataBucket.Bucket([]byte("tasks"))
+	if taskListBucket == nil {
+		return 0, fmt.Errorf("tasks bucket not found")
+	}
 	var numRemoved int
-	err := dataBucket.ForEach(func(k, v []byte) error {
+	remainingIds := []int{}
+	err := taskListBucket.ForEach(func(k, v []byte) error {
 		if v == nil {
-			taskBucket := dataBucket.Bucket(k)
+			taskBucket := taskListBucket.Bucket(k)
 			if taskBucket == nil {
 				return fmt.Errorf("task bucket %s not found", string(k))
 			}
@@ -297,30 +302,35 @@ func cleanList(b *bolt.Bucket) error {
 			if err != nil {
 				return nil // skip if task bucket is empty or doesn't exist
 			}
-
+			
 			if task.Done {
 				numRemoved++
-				return dataBucket.DeleteBucket(k)
+				return taskListBucket.DeleteBucket(k)
+			} else {
+				remainingIds = append(remainingIds, btoi(k))
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
+
+	// update TaskIds
+	dataBucket.Put([]byte("taskIds"), intsToBytes(remainingIds))
 
 	// update info with number of total and done tasks
 	infoBucket := b.Bucket([]byte("info"))
 	if infoBucket == nil {
-		return fmt.Errorf("info bucket not found")
+		return 0, fmt.Errorf("info bucket not found")
 	}
 
 	info, err := getInfo(infoBucket)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	info.NumTasks -= numRemoved
 	info.NumDone = 0
-	return saveInfo(infoBucket, info)
+	return numRemoved, saveInfo(infoBucket, info)
 }

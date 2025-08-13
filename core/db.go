@@ -146,14 +146,9 @@ func (db *DB) GetList(name string) (List, error) {
 			return fmt.Errorf("lists bucket not found - likely issue with database initialization")
 		}
 
-		infoBucket, dataBucket, err := openList(allLists, name, false)
+		_, dataBucket, err := openList(allLists, name, false)
 		if err != nil {
 			return fmt.Errorf("failed to open list %s: %w", name, err)
-		}
-
-		info, err := getInfo(infoBucket)
-		if err != nil {
-			return fmt.Errorf("failed to get info for list %s: %w", name, err)
 		}
 
 		data, err := getData(dataBucket)
@@ -161,10 +156,21 @@ func (db *DB) GetList(name string) (List, error) {
 			return fmt.Errorf("failed to get data for list %s: %w", name, err)
 		}
 
-		list.Info = info
 		list.Tasks = data.Tasks
 		list.TaskIds = data.TaskIds
 		list.UsedIds = data.UsedIds
+
+		// align list info with data
+		list.Info.NumTasks = len(list.Tasks)
+		list.Info.NumDone = 0
+		list.Info.NumPending = 0
+		for _, task := range list.Tasks {
+			if task.Done {
+				list.Info.NumDone++
+			} else {
+				list.Info.NumPending++
+			}
+		}
 
 		return nil
 	})
@@ -202,6 +208,18 @@ func (db *DB) SaveList(list List) error {
 		infoBucket, dataBucket, err := openList(rootBucket, list.Info.Name, true)
 		if err != nil {
 			return err
+		}
+
+		// align list info with data
+		list.Info.NumTasks = len(list.Tasks)
+		list.Info.NumDone = 0
+		list.Info.NumPending = 0
+		for _, task := range list.Tasks {
+			if task.Done {
+				list.Info.NumDone++
+			} else {
+				list.Info.NumPending++
+			}
 		}
 
 		// save info into meta data bucket
@@ -316,8 +334,9 @@ func (db *DB) DeleteAllLists() error {
 }
 
 // Clean up completed tasks in the specified lists
-func (db *DB) CleanLists(names []string) error {
-	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+func (db *DB) CleanLists(names []string) (int, error) {
+	var totalRemoved int
+	err := db.BoltDB.Update(func(tx *bolt.Tx) error {
 		allBuckets := tx.Bucket([]byte("lists"))
 		if allBuckets == nil {
 			return fmt.Errorf("lists bucket not found")
@@ -329,18 +348,21 @@ func (db *DB) CleanLists(names []string) error {
 				continue // skip if the list does not exist
 			}
 
-			err := cleanList(listBucket)
+			numRemoved, err := cleanList(listBucket)
 			if err != nil {
 				return err
 			}
+			totalRemoved += numRemoved
 		}
 		return nil
 	})
+	return totalRemoved, err
 }
 
 // Clean up completed tasks in all lists
-func (db *DB) CleanAllLists() error {
-	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+func (db *DB) CleanAllLists() (int, error) {
+	var totalRemoved int
+	err := db.BoltDB.Update(func(tx *bolt.Tx) error {
 		allBuckets := tx.Bucket([]byte("lists"))
 		if allBuckets == nil {
 			return fmt.Errorf("lists bucket not found")
@@ -352,14 +374,21 @@ func (db *DB) CleanAllLists() error {
 				return nil // skip if the list does not exist
 			}
 
-			return cleanList(listBucket)
+			numRemoved, err := cleanList(listBucket)
+			if err != nil {
+				return err
+			}
+			totalRemoved += numRemoved
+			return nil
 		})
 	})
+	return totalRemoved, err
 }
 
 // Clean up completed tasks in the current list
-func (db *DB) CleanCurrentList() error {
-	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+func (db *DB) CleanCurrentList() (int, error) {
+	var totalRemoved int
+	err := db.BoltDB.Update(func(tx *bolt.Tx) error {
 		name := getCurrListName(tx)
 
 		allBuckets := tx.Bucket([]byte("lists"))
@@ -371,8 +400,14 @@ func (db *DB) CleanCurrentList() error {
 		if listBucket == nil {
 			return nil // skip if the list does not exist
 		}
-		return cleanList(listBucket)
+		numRemoved, err := cleanList(listBucket)
+		if err != nil {
+			return err
+		}
+		totalRemoved += numRemoved
+		return nil
 	})
+	return totalRemoved, err
 }
 
 func (db *DB) ListExists(name string) (bool, error) {
