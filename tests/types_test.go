@@ -1,9 +1,11 @@
 package core_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jlz22/listly/core"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewList(t *testing.T) {
@@ -20,9 +22,9 @@ func TestNewList(t *testing.T) {
 	}
 }
 
-func TestNewTask(t *testing.T) {
+func TestAddNewTask(t *testing.T) {
 	l := core.NewList("test")
-	id, err := l.NewTask("task 1", false)
+	id, err := l.AddNewTask("task 1", false)
 	if err != nil {
 		t.Fatalf("unexpected error creating task: %v", err)
 	}
@@ -43,7 +45,7 @@ func TestNewTask(t *testing.T) {
 		t.Errorf("unexpected counts %+v", l.Info)
 	}
 
-	id2, err := l.NewTask("task 2", true)
+	id2, err := l.AddNewTask("task 2", true)
 	if err != nil {
 		t.Fatalf("unexpected error creating task: %v", err)
 	}
@@ -53,13 +55,39 @@ func TestNewTask(t *testing.T) {
 	_ = id2
 }
 
-func TestRemoveTask(t *testing.T) {
+func TestInsert(t *testing.T) {
 	l := core.NewList("test")
-	id, err := l.NewTask("task 1", false)
+	for i := 0; i < 5; i++ {
+		_, err := l.AddNewTask(fmt.Sprintf("task %d", i+1), false)
+		if err != nil {
+			t.Fatalf("unexpected error creating task: %v", err)
+		}
+	}
+
+	insertedTask, err := l.NewTask("inserted task", true)
 	if err != nil {
 		t.Fatalf("unexpected error creating task: %v", err)
 	}
-	_, err = l.NewTask("task 2", true)
+	err = l.Insert(insertedTask, 2)
+	if err != nil {
+		t.Fatalf("unexpected error inserting task: %v", err)
+	}
+	if len(l.Tasks) != 6 {
+		t.Fatalf("expected 6 tasks after insert, got %d", len(l.Tasks))
+	}
+	if l.Info.NumTasks != 6 || l.Info.NumDone != 1 || l.Info.NumPending != 5 {
+		t.Errorf("unexpected counts after insert %+v", l.Info)
+	}
+	require.Equal(t, "inserted task", l.Tasks[l.TaskIds[2]].Description)
+}
+
+func TestRemoveTask(t *testing.T) {
+	l := core.NewList("test")
+	id, err := l.AddNewTask("task 1", false)
+	if err != nil {
+		t.Fatalf("unexpected error creating task: %v", err)
+	}
+	_, err = l.AddNewTask("task 2", true)
 	if err != nil {
 		t.Fatalf("unexpected error creating task: %v", err)
 	}
@@ -83,7 +111,7 @@ func TestRemoveTask(t *testing.T) {
 
 func TestEditTaskDescription(t *testing.T) {
 	l := core.NewList("test")
-	id, err := l.NewTask("task 1", false)
+	id, err := l.AddNewTask("task 1", false)
 	if err != nil {
 		t.Fatalf("unexpected error creating task: %v", err)
 	}
@@ -104,7 +132,7 @@ func TestEditTaskDescription(t *testing.T) {
 
 func TestToggleCompletion(t *testing.T) {
 	l := core.NewList("test")
-	id, err := l.NewTask("task 1", false)
+	id, err := l.AddNewTask("task 1", false)
 	if err != nil {
 		t.Fatalf("unexpected error creating task: %v", err)
 	}
@@ -141,7 +169,7 @@ func TestUsedIdsUpdate(t *testing.T) {
 	list := core.NewList("test")
 
 	// Add a task and check UsedIds
-	id, err := list.NewTask("task1", false)
+	id, err := list.AddNewTask("task1", false)
 	if err != nil {
 		t.Fatalf("NewTask failed: %v", err)
 	}
@@ -187,9 +215,9 @@ func TestListInfoTracking(t *testing.T) {
 	l := core.NewList("tracktest")
 
 	// Add three tasks: two pending, one done
-	id1, _ := l.NewTask("t1", false)
-	l.NewTask("t2", false)
-	id3, _ := l.NewTask("t3", true)
+	id1, _ := l.AddNewTask("t1", false)
+	l.AddNewTask("t2", false)
+	id3, _ := l.AddNewTask("t3", true)
 
 	if l.Info.NumTasks != 3 || l.Info.NumDone != 1 || l.Info.NumPending != 2 {
 		t.Errorf("unexpected counts after adds: %+v", l.Info)

@@ -61,7 +61,7 @@ func TestSaveListAndGetList(t *testing.T) {
 	list := core.NewList("list1")
 
 	for i := 0; i < 5; i++ {
-		list.NewTask(fmt.Sprintf("task%d", i+1), i % 2 == 0)
+		list.AddNewTask(fmt.Sprintf("task%d", i+1), i%2 == 0)
 		require.Equal(t, fmt.Sprintf("task%d", i+1), list.Tasks[list.TaskIds[i]].Description)
 		require.Equal(t, list.Tasks[list.TaskIds[i]].Done, i%2 == 0)
 		require.Equal(t, list.TaskIds[i], list.Tasks[list.TaskIds[i]].Id)
