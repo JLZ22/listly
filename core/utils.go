@@ -30,3 +30,12 @@ func SplitByCompletion(list List) (completed, pending []*Task) {
 	}
 	return
 }
+
+func RemoveIntFromSlice(s []int, val int) []int {
+	for i, v := range s {
+		if v == val {
+			return append(s[:i], s[i+1:]...)
+		}
+	}
+	return s
+}

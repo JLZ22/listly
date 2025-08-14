@@ -51,12 +51,11 @@ func (l *List) generateTaskId() (int, error) {
 	}
 }
 
-// add the provided task to the list and update meta data
-// returns the id of the newly created task
-func (l *List) NewTask(description string, done bool) (int, error) {
+// make new task with the given description and completion status without adding it to the list.
+func (l *List) NewTask(description string, done bool) (Task, error) {
 	id, err := l.generateTaskId()
 	if err != nil {
-		return -1, err
+		return Task{}, err
 	}
 	task := Task{
 		Id:          id,
@@ -64,6 +63,14 @@ func (l *List) NewTask(description string, done bool) (int, error) {
 		Done:        done,
 	}
 
+	return task, nil
+}
+
+// add a task to the list.
+func (l *List) AddTask(task Task) error {
+	if _, ok := l.Tasks[task.Id]; ok {
+		return fmt.Errorf("task with id %d already exists", task.Id)
+	}
 	l.Tasks[task.Id] = &task
 	l.TaskIds = append(l.TaskIds, task.Id)
 	l.Info.NumTasks++
@@ -71,6 +78,52 @@ func (l *List) NewTask(description string, done bool) (int, error) {
 		l.Info.NumDone++
 	} else {
 		l.Info.NumPending++
+	}
+	return nil
+}
+
+// insert a task after a certain index of the list.
+func (l *List) Insert(task Task, index int) error {
+	if index < 0 || index > len(l.TaskIds) {
+		return fmt.Errorf("invalid index %d", index)
+	}
+	if _, ok := l.Tasks[task.Id]; ok {
+		return fmt.Errorf("task with id %d already exists", task.Id)
+	}
+	l.Tasks[task.Id] = &task
+	l.TaskIds = append(l.TaskIds[:index], append([]int{task.Id}, l.TaskIds[index:]...)...)
+	l.Info.NumTasks++
+	if task.Done {
+		l.Info.NumDone++
+	} else {
+		l.Info.NumPending++
+	}
+	return nil
+}
+
+// add a new task to the list and update meta data
+// returns the id of the newly created task
+func (l *List) AddNewTask(description string, done bool) (int, error) {
+	task, err := l.NewTask(description, done)
+	if err != nil {
+		return -1, err
+	}
+	err = l.AddTask(task)
+	if err != nil {
+		return -1, err
+	}
+	return task.Id, nil
+}
+
+// insert a new task into the list at the specified index and update meta data
+func (l *List) InsertNewTask(description string, index int) (int, error) {
+	task, err := l.NewTask(description, false)
+	if err != nil {
+		return -1, err
+	}
+	err = l.Insert(task, index)
+	if err != nil {
+		return -1, err
 	}
 	return task.Id, nil
 }
@@ -80,6 +133,7 @@ func (l *List) RemoveTask(taskId int) error {
 	if task, ok := l.Tasks[taskId]; ok {
 		delete(l.Tasks, taskId)
 		delete(l.UsedIds, taskId)
+		l.TaskIds = RemoveIntFromSlice(l.TaskIds, taskId)
 		l.Info.NumTasks--
 		if task.Done {
 			l.Info.NumDone--
