@@ -144,6 +144,7 @@ func handleVisualInput(msg tea.Msg, m model) (model, tea.Cmd) {
 				}
 			}
 			m = visualToNormal(m)
+			m.cursor.row = min(m.data.list.Info.NumTasks - 1, m.cursor.row)
 
 		case key.Matches(msg, DefaultVisualKeyMap.Yank):
 			copyBuff := copySelection(m)
