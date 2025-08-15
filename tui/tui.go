@@ -156,6 +156,9 @@ func (m model) View() string {
 
 // convert the list into a bunch of lines
 func buildLines(m model, includeCursor bool) []string {
+	if m.data.list.Info.NumTasks == 0 {
+		return []string{"\n No tasks in this list. Press \"n\" to add one.\n\n"}
+	}
 	lines := make([]string, 0, 1+m.data.list.Info.NumTasks+1) // + 1 for the dividing bar
 	lines = append(lines, "\n  Todo:\n\n")
 
@@ -190,16 +193,6 @@ func buildLines(m model, includeCursor bool) []string {
 }
 
 func makeHeader(m model) string {
-	if m.data.list.Info.NumTasks == 0 {
-		// print diff message if no tasks in list
-		name := m.data.list.Info.Name
-		if m.editInfo.dirty {
-			name += " (*)"
-		}
-		return "\n  " + name + " has no tasks. Press \"n\" to add one.\n\n"
-	}
-
-	// render the list name
 	listName := m.data.list.Info.Name
 
 	// mark dirty list with (*)

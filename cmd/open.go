@@ -53,6 +53,7 @@ var OpenCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
+				fmt.Print("\033[H\033[2J") // clear the screen
 				return nil
 			},
 		)
