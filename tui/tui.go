@@ -1,8 +1,13 @@
 package tui
 
 import (
+	"strings"
+
+	help "github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jlz22/listly/core"
 )
 
@@ -13,30 +18,36 @@ type confirmation struct {
 
 type data struct {
 	list core.List
-	db  *core.DB
+	db   *core.DB
 }
 
 type cursor struct {
-	row int
-	selected map[int]struct{}
+	row      int
+	selStart int
 }
 
 type editInfo struct {
 	textInput textinput.Model
 	copyBuff  []core.Task // buffer for copied tasks
-	dirty bool
-	taskId int // the id of the task being edited
-	location int // where to insert the new task
+	dirty     bool
+	taskId    int // the id of the task being edited
+	location  int // where to insert the new task
 }
 
 type model struct {
-	data data
-	cursor cursor
-	editInfo editInfo
+	data         data
+	cursor       cursor
+	editInfo     editInfo
 	confirmation confirmation
 	mode         string
-	Error error
+	vp           viewport.Model
 }
+
+var titleStyle = func() lipgloss.Style {
+	b := lipgloss.RoundedBorder()
+	b.Right = "├"
+	return lipgloss.NewStyle().BorderStyle(b).Padding(0, 0)
+}()
 
 func (m model) Init() tea.Cmd {
 	// No init I/O needed.
@@ -63,90 +74,90 @@ func NewModel(db *core.DB, listName string) (model, error) {
 			db:   db,
 		},
 		cursor: cursor{
-			row:     0,
-			selected: make(map[int]struct{}),
+			row:      0,
+			selStart: -1,
 		},
 		editInfo: editInfo{
 			textInput: ti,
 			copyBuff:  make([]core.Task, 0),
-			dirty:    false,
-			taskId:   -1,
+			dirty:     false,
+			taskId:    -1,
 		},
 		confirmation: confirmation{
 			active:  false,
 			message: "",
 		},
 		mode: "normal",
-		Error: nil,
+		vp:   viewport.New(0, 0),
 	}, nil
+}
+
+func (m *model) ensureCursorVisible() {
+	top := m.vp.YOffset
+	bottom := top + m.vp.Height - 1
+	if m.cursor.row < top {
+		m.vp.YOffset = m.cursor.row - 1
+	} else if m.cursor.row > bottom-8 {
+		m.vp.YOffset = m.cursor.row - m.vp.Height + 9
+	}
 }
 
 // Interpret input and update shared state.
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch m.confirmation.active {
-	case true:
-		switch msg := msg.(type) {
-		case tea.KeyMsg:
-			switch msg.String() {
-			case "y", "enter":
-				m.confirmation.active = false
-				m.confirmation.message = ""
-				return m, tea.Quit
-			case "n":
-				m.confirmation.active = false
-				m.confirmation.message = ""
-				return m, nil
-			}
-		}
-	case false:
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		headerHeight := lipgloss.Height(makeHeader(m))
+		footerHeight := lipgloss.Height(makeFooter(m, help.New().FullHelpView(DefaultNormalKeyMap.FullHelp())))
+		verticalHeight := headerHeight + footerHeight
+		m.vp.Width, m.vp.Height = msg.Width, msg.Height-verticalHeight
+
+	case tea.KeyMsg:
 		switch m.mode {
 		case "normal":
-			return handleNormalInput(msg, m)
+			m, cmd = handleNormalInput(msg, m)
 		case "insert":
-			return handleInsertInput(msg, m)
+			m, cmd = handleInsertInput(msg, m)
 		case "visual":
-			return handleVisualInput(msg, m)
+			m, cmd = handleVisualInput(msg, m)
 		}
 	}
 
-	return m, nil
+	// keep cursor in view & update content
+	m.ensureCursorVisible()
+	switch m.mode {
+	case "normal":
+		m.vp.SetContent(renderNormalView(m) + "\nEOF")
+	case "insert":
+		m.vp.SetContent(renderInsertView(m) + "\nEOF")
+	case "visual":
+		m.vp.SetContent(renderVisualView(m) + "\nEOF")
+	}
+
+	return m, cmd
 }
 
-// Render the view based on current state.
 func (m model) View() string {
-	switch m.confirmation.active {
-	case true:
+	if m.confirmation.active {
 		return "\n" + m.confirmation.message
-	case false:
-		switch m.mode {
-		case "normal":
-			return renderNormalView(m)
-		case "insert":
-			return renderInsertView(m)
-		case "visual":
-			return renderVisualView(m)
-		}
 	}
+	out := makeHeader(m) + m.vp.View() + "\n\n"
 
-	return "Invalid Mode - Developer is a monkey."
+	switch m.mode {
+	case "normal":
+		return out + makeFooter(m, help.New().FullHelpView(DefaultNormalKeyMap.FullHelp()))
+	case "insert":
+		return out + makeFooter(m, help.New().FullHelpView(DefaultInsertKeyMap.FullHelp()))
+	case "visual":
+		return out + makeFooter(m, help.New().FullHelpView(DefaultVisualKeyMap.FullHelp()))
+	}
+	return "Developer is a monkey - this shouldn't happen"
 }
 
 // convert the list into a bunch of lines
 func buildLines(m model, includeCursor bool) []string {
-	if m.data.list.Info.NumTasks == 0 {
-		return []string{"\n  " + m.data.list.Info.Name + " has no tasks. Press \"n\" to add one.\n\n"}
-	}
-
-	// render the list name
-	lines := make([]string, 0, 1 + m.data.list.Info.NumTasks)
-	listName := "\n  " + m.data.list.Info.Name
-
-	// mark dirty list with (*)
-	if m.editInfo.dirty {
-		listName += " (*)"
-	}
-	listName += "\n\n"
-	lines = append(lines, listName)
+	lines := make([]string, 0, 1+m.data.list.Info.NumTasks+1) // + 1 for the dividing bar
+	lines = append(lines, "\n  Todo:\n\n")
 
 	// track the task count to know when to place the cursor
 	i := 0
@@ -164,7 +175,7 @@ func buildLines(m model, includeCursor bool) []string {
 
 	// render horizontal bar and all of the completed tasks
 	if len(done) > 0 {
-		lines = append(lines, "\n    ==============================\n\n") // add a blank line between pending and completed tasks
+		lines = append(lines, "\n  Complete:\n\n") // add a blank line between pending and completed tasks
 		for _, task := range done {
 			str := "      [x] " + task.Description + "\n"
 			if i == m.cursor.row && includeCursor {
@@ -178,12 +189,30 @@ func buildLines(m model, includeCursor bool) []string {
 	return lines
 }
 
-func getNumNotDone(m model) int {
-	_, notDone := core.SplitByCompletion(m.data.list)
-	return len(notDone)
+func makeHeader(m model) string {
+	if m.data.list.Info.NumTasks == 0 {
+		// print diff message if no tasks in list
+		name := m.data.list.Info.Name
+		if m.editInfo.dirty {
+			name += " (*)"
+		}
+		return "\n  " + name + " has no tasks. Press \"n\" to add one.\n\n"
+	}
+
+	// render the list name
+	listName := m.data.list.Info.Name
+
+	// mark dirty list with (*)
+	if m.editInfo.dirty {
+		listName += " (*)"
+	}
+
+	title := titleStyle.Render(listName)
+	line := strings.Repeat("─", max(0, m.vp.Width-lipgloss.Width(title)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, title, line) + "\n"
 }
 
-func getNumDone(m model) int {
-	done, _ := core.SplitByCompletion(m.data.list)
-	return len(done)
+func makeFooter(m model, help string) string {
+	line := strings.Repeat("─", max(0, m.vp.Width))
+	return lipgloss.JoinVertical(lipgloss.Center, line, help)
 }

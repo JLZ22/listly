@@ -3,7 +3,6 @@ package tui
 import (
 	"strings"
 
-	help "github.com/charmbracelet/bubbles/help"
 	key "github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/jlz22/listly/core"
@@ -11,7 +10,9 @@ import (
 
 type NormalKeyMap struct {
 	Up               key.Binding
+	UpFive           key.Binding
 	Down             key.Binding
+	DownFive         key.Binding
 	QuitWithWarning  key.Binding
 	QuitNoWarning    key.Binding
 	NewTask          key.Binding
@@ -44,9 +45,9 @@ func (k NormalKeyMap) ShortHelp() []key.Binding {
 // key.Map interface.
 func (k NormalKeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down, k.QuitWithWarning},       // first column
-		{k.Write, k.NewTask, k.EditTask},        // second column
-		{k.ClearAndEdit, k.DeleteTask, k.Yank},  // third column
+		{k.Up, k.Down, k.QuitWithWarning},                 // first column
+		{k.Write, k.NewTask, k.EditTask},                  // second column
+		{k.ClearAndEdit, k.DeleteTask, k.Yank},            // third column
 		{k.EnableVisualMode, k.PasteAfter, k.PasteBefore}, // fourth column
 		{k.JumpUp, k.JumpDown, k.ToggleCompletion},        // fifth column
 		{k.NewBefore, k.NewAfter},
@@ -61,6 +62,14 @@ var DefaultNormalKeyMap = NormalKeyMap{
 	Down: key.NewBinding(
 		key.WithKeys("down", "j"),
 		key.WithHelp("↓/j", "down"),
+	),
+	UpFive: key.NewBinding(
+		key.WithKeys("K"),
+		key.WithHelp("K", "up 5"),
+	),
+	DownFive: key.NewBinding(
+		key.WithKeys("J"),
+		key.WithHelp("J", "down 5"),
 	),
 	QuitWithWarning: key.NewBinding(
 		key.WithKeys("q"),
@@ -127,133 +136,199 @@ var DefaultNormalKeyMap = NormalKeyMap{
 	),
 }
 
-func handleNormalInput(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, DefaultNormalKeyMap.Up):
-			if m.cursor.row > 0 {
-				m.cursor.row--
-			}
-
-		case key.Matches(msg, DefaultNormalKeyMap.Down):
-			if m.cursor.row < len(m.data.list.Tasks)-1 {
-				m.cursor.row++
-			}
-
-		case key.Matches(msg, DefaultNormalKeyMap.QuitWithWarning):
-			if m.editInfo.dirty {
-				m.confirmation.active = true
-				m.confirmation.message = "You have unsaved changes. Are you sure you want to quit? (y/enter = yes, n = no)"
-			} else {
+func handleNormalInput(msg tea.Msg, m model) (model, tea.Cmd) {
+	switch m.confirmation.active {
+	case true:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch msg.String() {
+			case "y", "enter":
+				m.confirmation.active = false
+				m.confirmation.message = ""
 				return m, tea.Quit
-			}
-
-		case key.Matches(msg, DefaultNormalKeyMap.QuitNoWarning):
-			return m, tea.Quit
-
-		case key.Matches(msg, DefaultNormalKeyMap.NewTask):
-			m.editInfo.taskId = -1
-			m.editInfo.location = m.data.list.Info.NumPending
-			m.mode = "insert"
-
-		case key.Matches(msg, DefaultNormalKeyMap.NewBefore):
-			m.editInfo.taskId = -1
-			m.editInfo.location = m.cursor.row
-			m.mode = "insert"
-		
-		case key.Matches(msg, DefaultNormalKeyMap.NewAfter):
-			m.editInfo.taskId = -1
-			m.editInfo.location = m.cursor.row + 1
-			m.mode = "insert"
-
-		case key.Matches(msg, DefaultNormalKeyMap.EditTask):
-			taskId := getCurrTaskId(m)
-			m.editInfo.taskId = taskId
-			m.editInfo.textInput.SetValue(m.data.list.Tasks[taskId].Description)
-			m.mode = "insert"
-
-		case key.Matches(msg, DefaultNormalKeyMap.ClearAndEdit):
-			taskId := getCurrTaskId(m)
-			m.editInfo.taskId = taskId
-			m.mode = "insert"
-
-		case key.Matches(msg, DefaultNormalKeyMap.DeleteTask):
-			if len(m.data.list.Tasks) == 0 {
+			case "n":
+				m.confirmation.active = false
+				m.confirmation.message = ""
 				return m, nil
 			}
-			taskId := getCurrTaskId(m)
-			task := m.data.list.Tasks[getCurrTaskId(m)]
-			m.editInfo.copyBuff = []core.Task{*task}
-			m.data.list.RemoveTask(taskId)
-			m.editInfo.dirty = true
+		}
+	case false:
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, DefaultNormalKeyMap.Up):
+				if m.cursor.row > 0 {
+					m.cursor.row--
+				}
 
-			// fix cursor position
-			m.cursor.row = max(0, m.cursor.row-1)
-
-		case key.Matches(msg, DefaultNormalKeyMap.ToggleCompletion):
-			// toggle completion
-			currTaskId := getCurrTaskId(m)
-			currTask := m.data.list.Tasks[currTaskId]
-			currTask.Done = !currTask.Done
-			m.editInfo.dirty = true
-
-			// update cursor position
-			_, notDone := core.SplitByCompletion(m.data.list)
-			if currTask.Done {
-				// keep cursor on last not done task
-				m.cursor.row = max(0, min(m.cursor.row, len(notDone)-1))
-			} else {
-				// keep cursor on first done task
-				if m.cursor.row < len(m.data.list.TaskIds)-1 {
+			case key.Matches(msg, DefaultNormalKeyMap.Down):
+				if m.cursor.row < len(m.data.list.Tasks)-1 {
 					m.cursor.row++
 				}
-			}
 
-		case key.Matches(msg, DefaultNormalKeyMap.EnableVisualMode):
-			// TODO
-			m.mode = "visual"
+			case key.Matches(msg, DefaultNormalKeyMap.UpFive):
+				if m.cursor.row > 4 {
+					m.cursor.row -= 4
+				} else {
+					m.cursor.row = 0
+				}
 
-		case key.Matches(msg, DefaultNormalKeyMap.Yank):
-			task := m.data.list.Tasks[getCurrTaskId(m)]
-			m.editInfo.copyBuff = []core.Task{*task}
+			case key.Matches(msg, DefaultNormalKeyMap.DownFive):
+				if m.cursor.row < len(m.data.list.Tasks)-6 {
+					m.cursor.row += 4
+				} else {
+					m.cursor.row = len(m.data.list.Tasks) - 1
+				}
 
-		case key.Matches(msg, DefaultNormalKeyMap.PasteAfter):
-			m = pasteTasks(m, false)
-			m.cursor.row++
+			case key.Matches(msg, DefaultNormalKeyMap.QuitWithWarning):
+				if m.editInfo.dirty {
+					m.confirmation.active = true
+					m.confirmation.message = "You have unsaved changes. Are you sure you want to quit? (y/enter = yes, n = no)"
+				} else {
+					return m, tea.Quit
+				}
 
-		case key.Matches(msg, DefaultNormalKeyMap.PasteBefore):
-			m = pasteTasks(m, true)
-
-		case key.Matches(msg, DefaultNormalKeyMap.Write):
-			err := m.data.db.SaveList(m.data.list)
-			if err != nil {
-				m.Error = err
+			case key.Matches(msg, DefaultNormalKeyMap.QuitNoWarning):
 				return m, tea.Quit
-			}
-			m.editInfo.dirty = false
 
-		case key.Matches(msg, DefaultNormalKeyMap.JumpUp):
-			lastNotDone := getNumNotDone(m) - 1
-			c := m.cursor.row
-			if c == lastNotDone + 1 {
-				m.cursor.row = lastNotDone
-			} else if c > lastNotDone + 1 {
-				m.cursor.row = lastNotDone + 1
-			} else {
-				m.cursor.row = 0
-			}
+			case key.Matches(msg, DefaultNormalKeyMap.NewTask):
+				m.editInfo.taskId = -1
+				m.editInfo.location = m.data.list.Info.NumPending
+				m.mode = "insert"
 
-		case key.Matches(msg, DefaultNormalKeyMap.JumpDown):
-			lastNotDone := getNumNotDone(m) - 1
-			c := m.cursor.row
+			case key.Matches(msg, DefaultNormalKeyMap.NewBefore):
+				if m.cursor.row >= m.data.list.Info.NumPending {
+					m.editInfo.taskId = -1
+					m.editInfo.location = m.data.list.Info.NumPending
+					m.mode = "insert"
+				} else {
+					m.editInfo.taskId = -1
+					m.editInfo.location = m.cursor.row
+					m.mode = "insert"
+				}
 
-			if c < lastNotDone {
-				m.cursor.row = lastNotDone
-			} else if c == lastNotDone {
-				m.cursor.row = lastNotDone + 1
-			} else {
-				m.cursor.row = len(m.data.list.TaskIds) - 1
+			case key.Matches(msg, DefaultNormalKeyMap.NewAfter):
+				if m.cursor.row >= m.data.list.Info.NumPending {
+					m.editInfo.taskId = -1
+					m.editInfo.location = m.data.list.Info.NumPending
+					m.mode = "insert"
+				} else {
+					m.editInfo.taskId = -1
+					m.editInfo.location = m.cursor.row + 1
+					m.mode = "insert"
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.EditTask):
+				if m.data.list.Info.NumTasks < 1 {
+					m.editInfo.taskId = -1
+					m.editInfo.location = m.data.list.Info.NumPending
+					m.mode = "insert"
+				} else {
+					taskId := getTaskId(m, m.cursor.row)
+					m.editInfo.taskId = taskId
+					m.editInfo.textInput.SetValue(m.data.list.Tasks[taskId].Description)
+					m.editInfo.location = m.cursor.row
+					m.mode = "insert"
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.ClearAndEdit):
+				if m.data.list.Info.NumTasks < 1 {
+					m.editInfo.taskId = -1
+					m.editInfo.location = m.data.list.Info.NumPending
+					m.mode = "insert"
+				} else {
+					taskId := getTaskId(m, m.cursor.row)
+					m.editInfo.taskId = taskId
+					m.mode = "insert"
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.DeleteTask):
+				if len(m.data.list.Tasks) == 0 {
+					return m, nil
+				}
+				taskId := getTaskId(m, m.cursor.row)
+				task := m.data.list.Tasks[getTaskId(m, m.cursor.row)]
+				m.editInfo.copyBuff = []core.Task{*task}
+				m.data.list.RemoveTask(taskId)
+				m.editInfo.dirty = true
+
+				// fix cursor position
+				m.cursor.row = max(0, min(m.cursor.row, m.data.list.Info.NumTasks-1))
+
+			case key.Matches(msg, DefaultNormalKeyMap.ToggleCompletion):
+				if m.data.list.Info.NumTasks < 1 {
+					break
+				}
+
+				// toggle completion
+				currTaskId := getTaskId(m, m.cursor.row)
+				currTask := m.data.list.Tasks[currTaskId]
+				currTask.Done = !currTask.Done
+				m.editInfo.dirty = true
+
+				// update cursor position and list info
+				if currTask.Done {
+					m.data.list.Info.NumPending -= 1
+					m.data.list.Info.NumDone += 1
+					// keep cursor on last not done task
+					m.cursor.row = max(0, min(m.cursor.row, m.data.list.Info.NumPending-1))
+
+				} else {
+					m.data.list.Info.NumPending += 1
+					m.data.list.Info.NumDone -= 1
+					// keep cursor on first done task
+					if m.cursor.row < m.data.list.Info.NumPending && m.data.list.Info.NumDone > 0 {
+						m.cursor.row++
+					}
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.EnableVisualMode):
+				if m.data.list.Info.NumTasks > 0 {
+					m.cursor.selStart = m.cursor.row
+					m.mode = "visual"
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.Yank):
+				if m.data.list.Info.NumTasks > 0 {
+					task := m.data.list.Tasks[getTaskId(m, m.cursor.row)]
+					m.editInfo.copyBuff = []core.Task{*task}
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.PasteAfter):
+				m = pasteTasks(m, false)
+
+			case key.Matches(msg, DefaultNormalKeyMap.PasteBefore):
+				m = pasteTasks(m, true)
+
+			case key.Matches(msg, DefaultNormalKeyMap.Write):
+				err := m.data.db.SaveList(m.data.list)
+				if err != nil {
+					panic(err)
+				}
+				m.editInfo.dirty = false
+
+			case key.Matches(msg, DefaultNormalKeyMap.JumpUp):
+				lastNotDone := m.data.list.Info.NumPending - 1
+				c := m.cursor.row
+				if c == lastNotDone+1 {
+					m.cursor.row = lastNotDone
+				} else if c > lastNotDone+1 {
+					m.cursor.row = lastNotDone + 1
+				} else {
+					m.cursor.row = 0
+				}
+
+			case key.Matches(msg, DefaultNormalKeyMap.JumpDown):
+				lastNotDone := m.data.list.Info.NumPending - 1
+				c := m.cursor.row
+
+				if c < lastNotDone {
+					m.cursor.row = lastNotDone
+				} else if c == lastNotDone {
+					m.cursor.row = lastNotDone + 1
+				} else {
+					m.cursor.row = len(m.data.list.TaskIds) - 1
+				}
 			}
 		}
 	}
@@ -261,15 +336,14 @@ func handleNormalInput(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 }
 
 func renderNormalView(m model) string {
-	h := help.New()
 	out := buildLines(m, true)
-	return strings.Join(out, "") + "\n\n" + h.FullHelpView(DefaultNormalKeyMap.FullHelp())
+	return strings.Join(out, "")
 }
 
-func getCurrTaskId(m model) int {
+func getTaskId(m model, displayIdx int) int {
 	done, notDone := core.SplitByCompletion(m.data.list)
 	combined := append(notDone, done...)
-	return combined[m.cursor.row].Id
+	return combined[displayIdx].Id
 }
 
 func pasteTasks(m model, before bool) model {
@@ -282,35 +356,45 @@ func pasteTasks(m model, before bool) model {
 	for i, task := range m.editInfo.copyBuff {
 		t, err := m.data.list.NewTask(task.Description, task.Done)
 		if err != nil {
-			m.Error = err
-			return m
+			panic(err)
 		}
 		newTasks[i] = t
 	}
 
-	// find the index of the task the cursor is on - this is diff from the cursor.row because the display order is not necessarily the same as the task list order
-	taskId := getCurrTaskId(m)
-	taskIndex := 0
-	for i, id := range m.data.list.TaskIds {
-		if id == taskId {
-			taskIndex = i
-			break
-		}
-	}
-
 	// add new tasks to the list
+	taskIndex := 0
+	if m.data.list.Info.NumTasks-1 > 0 {
+		taskIndex = getTaskIndex(m, min(m.cursor.row, m.data.list.Info.NumPending))
+	}
 	for i, task := range newTasks {
-		pasteIdx := taskIndex + i + 1
+		pasteIdx := min(taskIndex+i+1, len(m.data.list.TaskIds))
 		if before {
 			pasteIdx = taskIndex + i
 		}
 		err := m.data.list.Insert(task, pasteIdx)
 		if err != nil {
-			m.Error = err
-			return m
+			panic(err)
 		}
+	}
+
+	// fix cursor
+	if before {
+		m.cursor.row -= len(newTasks) - 1
+	} else {
+		m.cursor.row += len(newTasks)
 	}
 
 	m.editInfo.dirty = true
 	return m
+}
+
+// find the index of the task with the given id
+func getTaskIndex(m model, displayIdx int) int {
+	id := getTaskId(m, displayIdx)
+	for i, taskId := range m.data.list.TaskIds {
+		if taskId == id {
+			return i
+		}
+	}
+	return -1 // should never happen, but just in case
 }

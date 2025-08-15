@@ -23,7 +23,6 @@ var NewCmd = &cobra.Command{
 			noDup = append(noDup, listName)
 		}
 
-		
 		return core.WithDefaultDB(func(db *core.DB) error {
 			for _, listName := range noDup {
 				exists, err := db.ListExists(listName)

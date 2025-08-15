@@ -302,7 +302,7 @@ func cleanList(b *bolt.Bucket) (int, error) {
 			if err != nil {
 				return nil // skip if task bucket is empty or doesn't exist
 			}
-			
+
 			if task.Done {
 				numRemoved++
 				return taskListBucket.DeleteBucket(k)

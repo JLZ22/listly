@@ -53,7 +53,7 @@ var OpenCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				return m.Error
+				return nil
 			},
 		)
 	},
