@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"strings"
 
 	key "github.com/charmbracelet/bubbles/key"
@@ -157,6 +158,13 @@ func handleVisualInput(msg tea.Msg, m model) (model, tea.Cmd) {
 			for i := start; i <= end; i++ {
 				task := combined[i]
 				task.Done = !task.Done
+				if task.Done {
+					m.data.list.Info.NumDone++
+					m.data.list.Info.NumPending--
+				} else {
+					m.data.list.Info.NumDone--
+					m.data.list.Info.NumPending++
+				}
 				m.cursor.row--
 			}
 			m.cursor.row = max(0, m.cursor.row)
@@ -200,7 +208,7 @@ func renderVisualView(m model) string {
 
 	idx := start + 1
 	if start >= sepBarIdx {
-		idx += 2 // skip the separating bar
+		idx += 0 // skip the separating bar
 	}
 	for i := 0; i <= numSelected; {
 		if idx == sepBarIdx {
@@ -213,7 +221,7 @@ func renderVisualView(m model) string {
 		idx++
 	}
 
-	return strings.Join(lines, "")
+	return strings.Join(lines, "") + fmt.Sprintf("idx %d | num pending %d", idx, m.data.list.Info.NumPending)
 }
 
 func copySelection(m model) []core.Task {

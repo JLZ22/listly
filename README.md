@@ -8,9 +8,17 @@ This design allows seamless switching between multiple task contexts, enabling c
 
 ## Installation
 
-WIP
+Run the following command to install `listly` into your `$GOBIN` path, which defaults to `$GOPATH/bin` or `$HOME/go/bin` if the `GOPATH` environment variable is not set.
+
+```bash
+go install github.com/jlz22/listly@latest
+```
 
 ## Usage
+
+![Demo](assets/demo.gif)
+
+[Slightly Longer YouTube Demo](https://youtu.be/s1b4MqS0Fhg)
 
 ### CLI
 
@@ -27,7 +35,7 @@ WIP
 | `listly clean <list name> ...`        | Remove all completed tasks from the specified list(s)                                                |
 | `listly clean -a, --all`              | Remove all completed tasks from all lists                                                            |
 | `listly rename <old name> <new name>` | Rename a list from <old name> to <new name> - fails if the new name already exists                   |
-| `listly delete <list name>`           | Delete the specified list(s) - fails if any of the list(s) do not exist                              |
+| `listly delete <list name>`           | Delete the specified list(s) - will ignore lists that do not exist                              |
 
 ### TUI Controls
 
@@ -35,17 +43,18 @@ WIP
 | -------------- | ------------------------------------------------------------------ |
 | `j, up`        | Move down                                                          |
 | `k, down`      | Move up                                                            |
-| `h, left`      | Move left                                                          |
-| `l, right`     | Move right                                                         |
 | `n`            | Create a new task                                                  |
 | `i`            | Edit current task                                                  |
-| `D`            | Delete the current task and copy it                                |
-| `space, Enter` | Toggle a task as done or not done                                  |
-| `v`            | Toggle select mode                                                 |
+| `d`            | Delete the current task and copy it                                |
+| `space` | Toggle a task as done or not done                                  |
+| `v`            | Toggle visual mode                                                 |
 | `d`            | Delete the selection and copy it                                   |
 | `y`            | Copy the selected item(s) or current item if no selection          |
 | `p`            | Paste the copied item(s) after the current item                    |
+| `P`            | Paste the copied item(s) before the current item                   |
 | `w`            | Save changes                                                       |
 | `q`            | Quit the application - discard all changes, requiring confirmation |
-| `g`            | Jump to top of list                                                |
-| `G`            | Jump to last pending task                                          |
+| `{`            | Jump up                                               |
+| `}`            | Jump down                                          |
+| `o` | New task after the cursor |
+| `O` | New task before the cursor |
