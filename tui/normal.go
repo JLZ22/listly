@@ -141,15 +141,17 @@ func handleNormalInput(msg tea.Msg, m model) (model, tea.Cmd) {
 	case true:
 		switch msg := msg.(type) {
 		case tea.KeyMsg:
-			switch msg.String() {
-			case "y", "enter":
-				m.confirmation.active = false
-				m.confirmation.message = ""
-				return m, tea.Quit
-			case "n":
-				m.confirmation.active = false
-				m.confirmation.message = ""
-				return m, nil
+			switch {
+				case key.Matches(msg, key.NewBinding(key.WithKeys("ctrl+c"))):
+					return m, tea.Quit
+
+				case key.Matches(msg, key.NewBinding(key.WithKeys("n", "esc"))):
+					m.confirmation.active = false
+					m.confirmation.message = ""
+					return m, nil
+
+				case key.Matches(msg, key.NewBinding(key.WithKeys("y", "enter"))):
+					return m, tea.Quit
 			}
 		}
 	case false:
