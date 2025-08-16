@@ -18,7 +18,7 @@ type taskDTO struct {
 }
 
 type listDTO struct {
-	Title string    `json:"title" yaml:"title"`
+	Title string `json:"title" yaml:"title"`
 	Tasks []taskDTO
 }
 
@@ -28,7 +28,11 @@ var ImportCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fileName := args[0]
-		list, err := fileToData(fileName)
+		content, err := os.ReadFile(fileName)
+		if err != nil {
+			return err
+		}
+		list, err := fileToData(content, filepath.Ext(fileName))
 		if err != nil {
 			return err
 		}
@@ -49,16 +53,12 @@ func setUpImport() {
 	RootCmd.AddCommand(ImportCmd)
 }
 
-func fileToData(fileName string) (core.List, error) {
+func fileToData(content []byte, ext string) (core.List, error) {
 	var dto listDTO
 	var data core.List
-	content, err := os.ReadFile(fileName)
-	if err != nil {
-		return data, err
-	}
+	var err error
 
 	// unmarshal based on file extension
-	ext := filepath.Ext(fileName)
 	switch ext {
 	case ".json":
 		dec := json.NewDecoder(bytes.NewReader(content))

@@ -38,7 +38,11 @@ var ExportCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return dataToFile(list, fileName)
+			content, err := dataToFile(list, filepath.Ext(fileName))
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(fileName, content, 0644)
 		})
 	},
 }
@@ -47,7 +51,7 @@ func setUpExport() {
 	RootCmd.AddCommand(ExportCmd)
 }
 
-func dataToFile(list core.List, fileName string) error {
+func dataToFile(list core.List, ext string) ([]byte, error) {
 	var content []byte
 	var err error
 	var dto listDTO
@@ -62,18 +66,16 @@ func dataToFile(list core.List, fileName string) error {
 	}
 
 	// marshal based on file extension
-	ext := filepath.Ext(fileName)
-
 	switch ext {
 	case ".json":
 		content, err = json.MarshalIndent(dto, "", "  ")
 	case ".yaml":
 		content, err = yaml.Marshal(dto)
 	default:
-		return fmt.Errorf("unsupported file format: \"%s\". Supported formats are JSON and YAML", ext)
+		return content, fmt.Errorf("unsupported file format: \"%s\". Supported formats are JSON and YAML", ext)
 	}
 	if err != nil {
-		return err
+		return content, err
 	}
-	return os.WriteFile(fileName, content, 0644)
+	return content, nil
 }
