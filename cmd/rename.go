@@ -7,7 +7,7 @@ import (
 )
 
 var RenameCmd = &cobra.Command{
-	Use:   "rename [old list name] [new list name]",
+	Use:   "rename <old list name> <new list name>",
 	Short: "Rename an existing todo list.",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
