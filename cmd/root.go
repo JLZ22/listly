@@ -23,4 +23,6 @@ func SetUp() {
 	setUpRename()
 	setUpShow()
 	setUpSwitch()
+	setUpImport()
+	setUpExport()
 }
