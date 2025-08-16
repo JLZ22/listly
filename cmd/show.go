@@ -41,7 +41,7 @@ var ShowCmd = &cobra.Command{
 				return nil
 			}
 			completed, pending := core.SplitByCompletion(list)
-			fmt.Printf("\n%s\n", listName)
+			fmt.Printf("%s\n", listName)
 			fmt.Print(strings.Repeat("=", max(10, len(listName))) + "\n")
 			for _, task := range pending {
 				fmt.Printf("   [ ] %s\n", task.Description)

@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"strings"
 )
 
 func Success(msg string) {
@@ -13,7 +14,7 @@ func ListLists(lists []string, tab string) string {
 	for _, list := range lists {
 		out += fmt.Sprintf("%s- %s\n", tab, list)
 	}
-	return out
+	return strings.TrimRight(out, "\n")
 }
 
 func SplitByCompletion(list List) (completed, pending []*Task) {
