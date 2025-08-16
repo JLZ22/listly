@@ -22,39 +22,38 @@ go install github.com/jlz22/listly@latest
 
 ### CLI
 
-| Command                               | Description                                                                                          |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `listly open`                         | Open the TUI for the current list - fails if no current list exists.                                 |
-| `listly open <list name>`             | Open the specified list in the TUI, and switch current list to it - fails if the list does not exist |
-| `listly new <list name> ...`          | Create a new list with the specified name(s) - fails if any of the list(s) already exists            |
-| `listly switch <list name>`           | Switch to the specified list in the TUI - fails if the list does not exist                           |
-| `listly show`                         | Print info about the current list and all tasks in it                                                |
-| `listly show <list name>`             | Print info about the specified list and all tasks in it                                              |
-| `listly list`                         | Print name of all lists and their task counts                                                        |
-| `listly clean`                        | Remove all completed tasks from the current list                                                     |
-| `listly clean <list name> ...`        | Remove all completed tasks from the specified list(s)                                                |
-| `listly clean -a, --all`              | Remove all completed tasks from all lists                                                            |
-| `listly rename <old name> <new name>` | Rename a list from <old name> to <new name> - fails if the new name already exists                   |
-| `listly delete <list name>`           | Delete the specified list(s) - will ignore lists that do not exist                              |
+| Command                                        | Description                                                                                                |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `listly open [list name]`                      | Open the specified list in the TUI, and switch current list to it. Open current list if no list specified. |
+| `listly new <list name> [other list names...]` | Create a new list with the specified name(s).                                                              |
+| `listly switch <list name>`                    | Switch to the specified list in the TUI.                                                                   |
+| `listly show [list name]`                      | Print info about the specified list and all tasks in it. Show current list if no list specified.           |
+| `listly list`                                  | Print name of all lists and their task counts.                                                             |
+| `listly clean [list name] ...`                 | Remove all completed tasks from the specified list(s). Clean current list if no list(s) specified.         |
+| `listly clean -a, --all`                       | Remove all completed tasks from all lists.                                                                 |
+| `listly rename <old name> <new name>`          | Rename a list from <old name> to <new name>                                                                |
+| `listly delete <list name>`                    | Delete the specified list(s) - will ignore lists that do not exist.                                        |
+| `listly import <file>`                         | Import tasks from a file. Supported formats: JSON, YAML.                                                   |
+| `listly export [list name] <file>`             | Export list to a file. Exports current list if no list name specified. Supported formats: JSON, YAML.      |
 
 ### TUI Controls
 
-| Key            | Action                                                             |
-| -------------- | ------------------------------------------------------------------ |
-| `j, up`        | Move down                                                          |
-| `k, down`      | Move up                                                            |
-| `n`            | Create a new task                                                  |
-| `i`            | Edit current task                                                  |
-| `d`            | Delete the current task and copy it                                |
-| `space` | Toggle a task as done or not done                                  |
-| `v`            | Toggle visual mode                                                 |
-| `d`            | Delete the selection and copy it                                   |
-| `y`            | Copy the selected item(s) or current item if no selection          |
-| `p`            | Paste the copied item(s) after the current item                    |
-| `P`            | Paste the copied item(s) before the current item                   |
-| `w`            | Save changes                                                       |
-| `q`            | Quit the application - discard all changes, requiring confirmation |
-| `{`            | Jump up                                               |
-| `}`            | Jump down                                          |
-| `o` | New task after the cursor |
-| `O` | New task before the cursor |
+| Key       | Action                                                             |
+| --------- | ------------------------------------------------------------------ |
+| `j, up`   | Move down                                                          |
+| `k, down` | Move up                                                            |
+| `n`       | Create a new task                                                  |
+| `i`       | Edit current task                                                  |
+| `d`       | Delete the current task and copy it                                |
+| `space`   | Toggle a task as done or not done                                  |
+| `v`       | Toggle visual mode                                                 |
+| `d`       | Delete the selection and copy it                                   |
+| `y`       | Copy the selected item(s) or current item if no selection          |
+| `p`       | Paste the copied item(s) after the current item                    |
+| `P`       | Paste the copied item(s) before the current item                   |
+| `w`       | Save changes                                                       |
+| `q`       | Quit the application - discard all changes, requiring confirmation |
+| `{`       | Jump up                                                            |
+| `}`       | Jump down                                                          |
+| `o`       | New task after the cursor                                          |
+| `O`       | New task before the cursor                                         |
