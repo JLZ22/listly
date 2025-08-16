@@ -57,3 +57,7 @@ go install github.com/jlz22/listly@latest
 | `}`       | Jump down                                                          |
 | `o`       | New task after the cursor                                          |
 | `O`       | New task before the cursor                                         |
+
+## Quirks / Issues
+
+- TUI renders inconsistently when run on MacOS terminal as opposed to iTerm. 
