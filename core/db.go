@@ -9,7 +9,12 @@ import (
 
 // schema:
 // ------------------------------------------------------
-// 		"currentList": "string",
+// 		"currentList": {
+//         "name": "string",
+// 		},
+//      "config": {
+//         "api_key": "string",
+//      },
 // 		"lists": {
 // 			"listName": {
 // 				"info": {
@@ -72,6 +77,11 @@ func InitDB(path string) (*DB, error) {
 		}
 
 		_, err = tx.CreateBucketIfNotExists([]byte("lists"))
+		if err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte("config"))
 		if err != nil {
 			return err
 		}
@@ -418,6 +428,29 @@ func (db *DB) ListExists(name string) (bool, error) {
 
 	_, ok := allInfo[name]
 	return ok, nil
+}
+
+func (db *DB) SetAPIKey(apiKey string) error {
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("config"))
+		if b == nil {
+			return fmt.Errorf("config bucket not found")
+		}
+		return b.Put([]byte("api_key"), []byte(apiKey))
+	})
+}
+
+func (db *DB) GetAPIKey() (string, error) {
+	var apiKey string
+	err := db.BoltDB.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("config"))
+		if b == nil {
+			return fmt.Errorf("config bucket not found")
+		}
+		apiKey = string(b.Get([]byte("api_key")))
+		return nil
+	})
+	return apiKey, err
 }
 
 func (db *DB) Close() error {

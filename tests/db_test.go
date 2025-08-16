@@ -176,3 +176,15 @@ func TestGetInfo_MissingInfoBucket(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "info bucket not found")
 }
+
+func TestSetGetAPIKey(t *testing.T) {
+	db, cleanup := setupTempDB(t)
+	defer cleanup()
+
+	err := db.SetAPIKey("my-api-key")
+	require.NoError(t, err)
+
+	apiKey, err := db.GetAPIKey()
+	require.NoError(t, err)
+	require.Equal(t, "my-api-key", apiKey)
+}

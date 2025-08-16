@@ -25,4 +25,5 @@ func SetUp() {
 	setUpSwitch()
 	setUpImport()
 	setUpExport()
+	setUpAuth()
 }
