@@ -10,8 +10,8 @@ import (
 var deleteAll bool
 
 var DeleteCmd = &cobra.Command{
-	Use:   "delete [list name]",
-	Short: "Delete the specified list.",
+	Use:   "delete <list name> [more list names...]",
+	Short: "Delete the specified list(s).",
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if deleteAll {
