@@ -32,20 +32,35 @@ var ImportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		list, err := fileToData(content, filepath.Ext(fileName))
+		lists, err := fileToData(content, filepath.Ext(fileName))
 		if err != nil {
 			return err
 		}
-		return core.WithDefaultDB(func(db *core.DB) error {
-			exists, err := db.ListExists(list.Info.Name)
-			if err != nil {
-				return err
+		err = core.WithDefaultDB(func(db *core.DB) error {
+			for _, list := range lists {
+				exists, err := db.ListExists(list.Info.Name)
+				if err != nil {
+					return err
+				}
+				if exists {
+					return fmt.Errorf("failed to import because list %q already exists", list.Info.Name)
+				}
+
+				err = db.SaveList(list)
+				if err != nil {
+					return err
+				}
 			}
-			if exists {
-				return fmt.Errorf("failed to import because list %q already exists", list.Info.Name)
-			}
-			return db.SaveList(list)
+			return nil
 		})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("Imported the following lists:\n")
+		for _, list := range lists {
+			fmt.Println("  - ", list.Info.Name)
+		}
+		return nil
 	},
 }
 
@@ -53,9 +68,9 @@ func setUpImport() {
 	RootCmd.AddCommand(ImportCmd)
 }
 
-func fileToData(content []byte, ext string) (core.List, error) {
-	var dto listDTO
-	var data core.List
+func fileToData(content []byte, ext string) ([]core.List, error) {
+	var dtos []listDTO
+	var lists []core.List
 	var err error
 
 	// unmarshal based on file extension
@@ -63,21 +78,26 @@ func fileToData(content []byte, ext string) (core.List, error) {
 	case ".json":
 		dec := json.NewDecoder(bytes.NewReader(content))
 		dec.DisallowUnknownFields() // ensure no unknown fields
-		err = dec.Decode(&dto)
+		err = dec.Decode(&dtos)
 	case ".yaml":
 		dec := yaml.NewDecoder(bytes.NewReader(content))
 		dec.KnownFields(true)
-		err = dec.Decode(&dto)
+		err = dec.Decode(&dtos)
 	default:
-		return data, fmt.Errorf("unsupported file format: \"%s\". Supported formats are JSON and YAML", ext)
+		return lists, fmt.Errorf("unsupported file format: \"%s\". Supported formats are JSON and YAML", ext)
 	}
 	if err != nil {
-		return data, err
+		return lists, err
 	}
 
-	data = core.NewList(dto.Title)
-	for _, task := range dto.Tasks {
-		data.AddNewTask(task.Description, task.Done)
+	// convert dtos into lists 
+	lists = make([]core.List, len(dtos))
+	for i, dto := range dtos {
+		list := core.NewList(dto.Title)
+		for _, task := range dto.Tasks {
+			list.AddNewTask(task.Description, task.Done)
+		}
+		lists[i] = list
 	}
-	return data, nil
+	return lists, nil
 }
