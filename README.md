@@ -6,6 +6,32 @@ Each todo list resembles a Git branch: there is always a current list that you'r
 
 This design allows seamless switching between multiple task contexts, enabling context-based task management or project-specific lists without losing track of your progress elsewhere. You can create new lists, switch between them, and keep tasks organized across different areas of your work or life while staying efficient with intuitive CLI commands and natural Vim-style keybindings.
 
+`listly` also includes a Google Gemini powered list generation feature that can create task lists based on a project description passed in via a text file. 
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Demos](#demos)
+  - [Basic Functionality](#basic-functionality)
+  - [AI Powered List Generation](#ai-powered-list-generation-demo)
+- [Usage](#usage)
+  - [CLI](#cli)
+  - [TUI Controls](#tui-controls)
+  - [Getting a Gemini API Key](#getting-a-gemini-api-key)
+- [Quirks / Issues](#quirks--issues)
+
+## Demos
+
+### Basic Functionality
+
+![Demo](assets/demo.gif)
+
+[Slightly Longer YouTube Demo](https://youtu.be/s1b4MqS0Fhg)
+
+### AI Powered List Generation
+
+![Gemini List Gen Demo](assets/listly_demo_generate.gif)
+
 ## Installation
 
 Run the following command to install `listly` into your `$GOBIN` path, which defaults to `$GOPATH/bin` or `$HOME/go/bin` if the `GOPATH` environment variable is not set.
@@ -15,10 +41,6 @@ go install github.com/jlz22/listly@latest
 ```
 
 ## Usage
-
-![Demo](assets/demo.gif)
-
-[Slightly Longer YouTube Demo](https://youtu.be/s1b4MqS0Fhg)
 
 ### CLI
 
