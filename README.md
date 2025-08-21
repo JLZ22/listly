@@ -34,7 +34,9 @@ go install github.com/jlz22/listly@latest
 | `listly rename <old name> <new name>`          | Rename a list from <old name> to <new name>                                                                |
 | `listly delete <list name>`                    | Delete the specified list(s) - will ignore lists that do not exist.                                        |
 | `listly import <file>`                         | Import tasks from a file. Supported formats: JSON, YAML.                                                   |
-| `listly export <file> [list names...]`             | Export list(s) to a file. Exports current list if no list name specified. Supported formats: JSON, YAML.      |
+| `listly export <file> [list names...]`         | Export list(s) to a file. Exports current list if no list name specified. Supported formats: JSON, YAML.   |
+| `listly auth`                                  | Add Google Gemini API key.                                                                                 |
+| `listly generate <file>`                       | Generate todo lists from a prompt in a text file.                                                          |
 
 ### TUI Controls
 
@@ -58,6 +60,16 @@ go install github.com/jlz22/listly@latest
 | `o`       | New task after the cursor                                          |
 | `O`       | New task before the cursor                                         |
 
+### Getting a Gemini API Key
+
+To use the `generate` command, you need to set up a Gemini API key. You can get one by following these steps:
+
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey).
+2. Click on "Create API Key".
+3. If prompted, select or create a project.
+4. Copy the generated API key.
+5. Run `listly auth` and follow the prompts to set your API key.
+
 ## Quirks / Issues
 
-- TUI renders inconsistently when run on MacOS terminal as opposed to iTerm. 
+- TUI renders inconsistently when run on MacOS terminal as opposed to iTerm.

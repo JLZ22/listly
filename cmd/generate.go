@@ -58,7 +58,7 @@ var GenerateCmd = &cobra.Command{
 			}
 			instructions += " Exclude the following names from the lists: " + strings.TrimSuffix(existingLists, ", ") + "."
 
-			// generate lists 
+			// generate lists
 			result, err := generateLists(ctx, client, content)
 			if err != nil {
 				return err
@@ -110,11 +110,11 @@ func setUpGenerate() {
 func generateLists(ctx context.Context, client *genai.Client, content []byte) (*genai.GenerateContentResponse, error) {
 	functionCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	timeoutTimer := time.NewTimer(time.Duration(timeoutFlagValue) * time.Second + time.Millisecond * 300)
+	timeoutTimer := time.NewTimer(time.Duration(timeoutFlagValue)*time.Second + time.Millisecond*300)
 
 	type resultStruct struct {
 		response *genai.GenerateContentResponse
-		err error
+		err      error
 	}
 	resultCh := make(chan resultStruct, 1)
 
@@ -142,24 +142,23 @@ func generateLists(ctx context.Context, client *genai.Client, content []byte) (*
 		result, err := client.Models.GenerateContent(
 			functionCtx,
 			"gemini-2.5-flash",
-			genai.Text(instructions + "\n\n" + string(content)),
+			genai.Text(instructions+"\n\n"+string(content)),
 			core.GeminiConfig,
 		)
 		resultCh <- resultStruct{result, err}
 	}()
 
-
 	// wait for result or timeout
 	select {
-		case <-timeoutTimer.C:
-			fmt.Println()
-			return nil, fmt.Errorf("timed out after %d seconds", timeoutFlagValue)
-		case result := <-resultCh:
-			fmt.Println()
-			if result.err != nil {
-				return nil, fmt.Errorf("gemini error - %v", result.err)
-			}
-			fmt.Println("Success!")
-			return result.response, nil
+	case <-timeoutTimer.C:
+		fmt.Println()
+		return nil, fmt.Errorf("timed out after %d seconds", timeoutFlagValue)
+	case result := <-resultCh:
+		fmt.Println()
+		if result.err != nil {
+			return nil, fmt.Errorf("gemini error - %v", result.err)
+		}
+		fmt.Println("Success!")
+		return result.response, nil
 	}
 }

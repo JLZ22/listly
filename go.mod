@@ -9,6 +9,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	go.etcd.io/bbolt v1.4.2
+	golang.org/x/term v0.24.0
 	google.golang.org/genai v1.20.0
 	gopkg.in/yaml.v3 v3.0.1
 )

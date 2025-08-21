@@ -219,7 +219,7 @@ func (l *List) String() string {
 	if len(l.Tasks) == 0 {
 		return fmt.Sprintf("No tasks found in list '%s'\n", listName)
 	}
-	
+
 	out := ""
 	completed, pending := SplitByCompletion(*l)
 	out += fmt.Sprintf("%s\n", listName)

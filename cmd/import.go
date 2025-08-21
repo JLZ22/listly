@@ -18,7 +18,7 @@ type taskDTO struct {
 }
 
 type listDTO struct {
-	Title string `json:"title" yaml:"title"`
+	Title string    `json:"title" yaml:"title"`
 	Tasks []taskDTO `json:"tasks" yaml:"tasks"`
 }
 
@@ -90,7 +90,7 @@ func fileToData(content []byte, ext string) ([]core.List, error) {
 		return lists, err
 	}
 
-	// convert dtos into lists 
+	// convert dtos into lists
 	lists = make([]core.List, len(dtos))
 	for i, dto := range dtos {
 		list := core.NewList(dto.Title)

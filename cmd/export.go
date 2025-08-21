@@ -16,7 +16,7 @@ var ExportCmd = &cobra.Command{
 	Short: "Export list to a file. Uses current list if no list name(s) provided. Supported formats: JSON, YAML",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		lists := make([]core.List, max(1, len(args) - 1))
+		lists := make([]core.List, max(1, len(args)-1))
 		err := core.WithDefaultDB(func(db *core.DB) error {
 			var fileName string
 
@@ -33,7 +33,7 @@ var ExportCmd = &cobra.Command{
 				lists[0] = list
 			} else {
 				fileName = args[0]
-				for i := 1 ; i < len(args) ; i++ {
+				for i := 1; i < len(args); i++ {
 					list, err := db.GetList(args[i])
 					if err != nil {
 						return err
