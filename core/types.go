@@ -3,6 +3,9 @@ package core
 import (
 	"fmt"
 	"math/rand"
+	"strings"
+
+	"google.golang.org/genai"
 )
 
 type Task struct {
@@ -23,6 +26,44 @@ type List struct {
 	TaskIds []int
 	Tasks   map[int]*Task
 	UsedIds map[int]struct{}
+}
+
+//	{
+//			{
+//				"name": string,
+//				"tasks": [
+//					{
+//						"description": string,
+//						"done": bool,
+//					},
+//					...
+//				]
+//			},
+//			...
+//	}
+var geminiSchema = &genai.Schema{
+	Type: genai.TypeArray,
+	Items: &genai.Schema{
+		Type: genai.TypeObject,
+		Properties: map[string]*genai.Schema{
+			"title": {Type: genai.TypeString},
+			"tasks": {
+				Type: genai.TypeArray,
+				Items: &genai.Schema{
+					Type: genai.TypeObject,
+					Properties: map[string]*genai.Schema{
+						"description": {Type: genai.TypeString},
+						"done":        {Type: genai.TypeBoolean},
+					},
+				},
+			},
+		},
+	},
+}
+
+var GeminiConfig = &genai.GenerateContentConfig{
+	ResponseMIMEType: "application/json",
+	ResponseSchema:   geminiSchema,
 }
 
 func NewList(name string) List {
@@ -171,4 +212,24 @@ func (l *List) ToggleCompletion(taskId int) error {
 		return fmt.Errorf("tried toggling non-existent task id %d in list %s", taskId, l.Info.Name)
 	}
 	return nil
+}
+
+func (l *List) String() string {
+	listName := l.Info.Name
+	if len(l.Tasks) == 0 {
+		return fmt.Sprintf("No tasks found in list '%s'\n", listName)
+	}
+	
+	out := ""
+	completed, pending := SplitByCompletion(*l)
+	out += fmt.Sprintf("%s\n", listName)
+	out += fmt.Sprint(strings.Repeat("=", max(10, len(listName))) + "\n")
+	for _, task := range pending {
+		out += fmt.Sprintf("   [ ] %s\n", task.Description)
+	}
+	for _, task := range completed {
+		out += fmt.Sprintf("   [x] %s\n", task.Description)
+	}
+
+	return out
 }

@@ -1,0 +1,56 @@
+[
+    {
+        "title": "grocery_list",
+        "tasks": [
+            {
+                "description": "Buy 2 lbs of chicken breast",
+                "done": false
+            },
+            {
+                "description": "Pick up 1 dozen eggs",
+                "done": false
+            },
+            {
+                "description": "Get 1 gallon of milk",
+                "done": false
+            },
+            {
+                "description": "Buy fresh vegetables: carrots, spinach, bell peppers",
+                "done": false
+            },
+            {
+                "description": "Get whole wheat bread",
+                "done": false
+            }
+        ]
+    },
+    {
+        "title": "chicken_stir_fry",
+        "tasks": [
+            {
+                "description": "Preheat oven to 375°F",
+                "done": false
+            },
+            {
+                "description": "Chop vegetables for stir-fry",
+                "done": false
+            },
+            {
+                "description": "Marinate chicken with garlic, soy sauce, and olive oil for 30 minutes",
+                "done": false
+            },
+            {
+                "description": "Boil eggs for 8 minutes",
+                "done": false
+            },
+            {
+                "description": "Bake chicken for 25-30 minutes until fully cooked",
+                "done": false
+            },
+            {
+                "description": "Serve stir-fry with cooked chicken and steamed rice",
+                "done": false
+            }
+        ]
+    }
+]

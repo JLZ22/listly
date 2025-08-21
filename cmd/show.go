@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/jlz22/listly/core"
 	"github.com/spf13/cobra"
@@ -35,20 +34,7 @@ var ShowCmd = &cobra.Command{
 				return fmt.Errorf("could not retrieve list %s due to the following error\n\t %v", listName, err)
 			}
 
-			// Print the tasks in the list
-			if len(list.Tasks) == 0 {
-				fmt.Printf("No tasks found in list '%s'\n", listName)
-				return nil
-			}
-			completed, pending := core.SplitByCompletion(list)
-			fmt.Printf("%s\n", listName)
-			fmt.Print(strings.Repeat("=", max(10, len(listName))) + "\n")
-			for _, task := range pending {
-				fmt.Printf("   [ ] %s\n", task.Description)
-			}
-			for _, task := range completed {
-				fmt.Printf("   [x] %s\n", task.Description)
-			}
+			fmt.Printf("%v", &list)
 			return nil
 		})
 	},

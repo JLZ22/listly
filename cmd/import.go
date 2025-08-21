@@ -19,7 +19,7 @@ type taskDTO struct {
 
 type listDTO struct {
 	Title string `json:"title" yaml:"title"`
-	Tasks []taskDTO
+	Tasks []taskDTO `json:"tasks" yaml:"tasks"`
 }
 
 var ImportCmd = &cobra.Command{

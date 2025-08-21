@@ -26,4 +26,5 @@ func SetUp() {
 	setUpImport()
 	setUpExport()
 	setUpAuth()
+	setUpGenerate()
 }

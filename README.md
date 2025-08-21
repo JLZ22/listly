@@ -34,7 +34,7 @@ go install github.com/jlz22/listly@latest
 | `listly rename <old name> <new name>`          | Rename a list from <old name> to <new name>                                                                |
 | `listly delete <list name>`                    | Delete the specified list(s) - will ignore lists that do not exist.                                        |
 | `listly import <file>`                         | Import tasks from a file. Supported formats: JSON, YAML.                                                   |
-| `listly export [list name] <file>`             | Export list to a file. Exports current list if no list name specified. Supported formats: JSON, YAML.      |
+| `listly export <file> [list names...]`             | Export list(s) to a file. Exports current list if no list name specified. Supported formats: JSON, YAML.      |
 
 ### TUI Controls
 
