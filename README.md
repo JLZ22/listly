@@ -32,6 +32,8 @@ This design allows seamless switching between multiple task contexts, enabling c
 
 ![Gemini List Gen Demo](assets/generate_demo.gif)
 
+[Youtube Version](https://www.youtu.be/JiIubzw7owM)
+
 ## Installation
 
 Run the following command to install `listly` into your `$GOBIN` path, which defaults to `$GOPATH/bin` or `$HOME/go/bin` if the `GOPATH` environment variable is not set.
