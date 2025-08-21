@@ -49,11 +49,11 @@ go install github.com/jlz22/listly@latest
 | Command                                        | Description                                                                                                |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `listly open [list name]`                      | Open the specified list in the TUI, and switch current list to it. Open current list if no list specified. |
-| `listly new <list name> [other list names...]` | Create a new list with the specified name(s).                                                              |
+| `listly new <list name> [other list names...]` | Create new list(s) with the specified name(s).                                                              |
 | `listly switch <list name>`                    | Switch to the specified list in the TUI.                                                                   |
 | `listly show [list name]`                      | Print info about the specified list and all tasks in it. Show current list if no list specified.           |
 | `listly list`                                  | Print name of all lists and their task counts.                                                             |
-| `listly clean [list name] ...`                 | Remove all completed tasks from the specified list(s). Clean current list if no list(s) specified.         |
+| `listly clean [list names...]`                 | Remove all completed tasks from the specified list(s). Clean current list if no list(s) specified.         |
 | `listly clean -a, --all`                       | Remove all completed tasks from all lists.                                                                 |
 | `listly rename <old name> <new name>`          | Rename a list from <old name> to <new name>                                                                |
 | `listly delete <list name>`                    | Delete the specified list(s) - will ignore lists that do not exist.                                        |
