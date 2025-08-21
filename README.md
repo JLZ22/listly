@@ -30,7 +30,7 @@ This design allows seamless switching between multiple task contexts, enabling c
 
 ### AI Powered List Generation
 
-![Gemini List Gen Demo](assets/listly_demo_generate.gif)
+![Gemini List Gen Demo](assets/generate_demo.gif)
 
 ## Installation
 
