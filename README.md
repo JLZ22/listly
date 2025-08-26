@@ -32,7 +32,7 @@ This design allows seamless switching between multiple task contexts, enabling c
 
 ![Gemini List Gen Demo](assets/generate_demo.gif)
 
-[Youtube Version](https://www.youtu.be/JiIubzw7owM)
+[Youtube Version](https://youtu.be/Fy3c-LyJLRI)
 
 ## Installation
 
