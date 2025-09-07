@@ -1,7 +1,6 @@
 package tui
 
 import (
-	"fmt"
 	"strings"
 
 	key "github.com/charmbracelet/bubbles/key"
@@ -222,7 +221,7 @@ func renderVisualView(m model) string {
 		idx++
 	}
 
-	return strings.Join(lines, "") + fmt.Sprintf("idx %d | num pending %d", idx, m.data.list.Info.NumPending)
+	return strings.Join(lines, "")
 }
 
 func copySelection(m model) []core.Task {
