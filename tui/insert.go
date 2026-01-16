@@ -7,50 +7,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type InsertKeyMap struct {
-	Discard       key.Binding
-	QuitNoWarning key.Binding
-	Save          key.Binding
-}
-
-// ShortHelp returns keybindings to be shown in the mini help view. It's part
-// of the key.Map interface.
-func (k InsertKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Discard, k.Save}
-}
-
-// FullHelp returns keybindings for the expanded help view. It's part of the
-// key.Map interface.
-func (k InsertKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Discard}, // first column
-		{k.Save},
-	}
-}
-
-var DefaultInsertKeyMap = InsertKeyMap{
-	Discard: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "discard changes"),
-	),
-	QuitNoWarning: key.NewBinding(
-		key.WithKeys("ctrl+c"),
-	),
-	Save: key.NewBinding(
-		key.WithKeys("enter"),
-		key.WithHelp("enter", "save"),
-	),
-}
-
 func handleInsertInput(msg tea.Msg, m model) (model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, DefaultInsertKeyMap.Discard):
+		case key.Matches(msg, m.kmap.Insert.Discard):
 			m = insertToNormal(m)
-		case key.Matches(msg, DefaultInsertKeyMap.QuitNoWarning):
+		case key.Matches(msg, m.kmap.Insert.QuitNoWarning):
 			return m, tea.Quit
-		case key.Matches(msg, DefaultInsertKeyMap.Save):
+		case key.Matches(msg, m.kmap.Insert.Save):
 			str := m.editInfo.textInput.Value()
 			if len(str) == 0 {
 				m = insertToNormal(m)

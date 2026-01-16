@@ -1,0 +1,35 @@
+# Shared Key Mappings (common across modes)
+Shared:
+  Up: k
+  UpFive: K
+  Down: j
+  DownFive: J
+  QuitNoWarning: ctrl+c
+  Yank: y
+  ToggleCompletion: " "
+  JumpUp: "{"
+  JumpDown: "}"
+
+# Normal Mode Key Mappings (unique to normal mode)
+Normal:
+  QuitWithWarning: q
+  NewTask: n
+  NewBefore: O
+  NewAfter: o
+  EditTask: i
+  ClearAndEdit: x
+  DeleteTask: d
+  EnableVisualMode: v
+  PasteAfter: p
+  PasteBefore: P
+  Write: w
+
+# Insert Mode Key Mappings (unique to insert mode)
+Insert:
+  Discard: esc
+  Save: enter
+
+# Visual Mode Key Mappings (unique to visual mode)
+Visual:
+  NormalMode: esc
+  Delete: d

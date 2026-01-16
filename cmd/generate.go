@@ -87,6 +87,7 @@ var GenerateCmd = &cobra.Command{
 					for _, list := range lists {
 						db.SaveList(list)
 					}
+					fmt.Println("Success! All lists added.")
 					break
 				} else if char == 'n' || char == 'N' {
 					// discard changes
@@ -94,7 +95,6 @@ var GenerateCmd = &cobra.Command{
 					break
 				}
 			}
-			fmt.Println("Success! All lists added.")
 
 			return nil
 		})

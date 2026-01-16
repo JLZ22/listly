@@ -6,7 +6,7 @@ Each todo list resembles a Git branch: there is always a current list that you'r
 
 This design allows seamless switching between multiple task contexts, enabling context-based task management or project-specific lists without losing track of your progress elsewhere. You can create new lists, switch between them, and keep tasks organized across different areas of your work or life while staying efficient with intuitive CLI commands and natural Vim-style keybindings.
 
-`listly` also includes a Google Gemini powered list generation feature that can create task lists based on a project description passed in via a text file. 
+`listly` also includes a Google Gemini powered list generation feature that can create task lists based on a project description passed in via a text file.
 
 ## Table of Contents
 
@@ -49,7 +49,7 @@ go install github.com/jlz22/listly@latest
 | Command                                        | Description                                                                                                |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `listly open [list name]`                      | Open the specified list in the TUI, and switch current list to it. Open current list if no list specified. |
-| `listly new <list name> [other list names...]` | Create new list(s) with the specified name(s).                                                              |
+| `listly new <list name> [other list names...]` | Create new list(s) with the specified name(s).                                                             |
 | `listly switch <list name>`                    | Switch to the specified list in the TUI.                                                                   |
 | `listly show [list name]`                      | Print info about the specified list and all tasks in it. Show current list if no list specified.           |
 | `listly list`                                  | Print name of all lists and their task counts.                                                             |
@@ -61,28 +61,50 @@ go install github.com/jlz22/listly@latest
 | `listly export <file> [list names...]`         | Export list(s) to a file. Exports current list if no list name specified. Supported formats: JSON, YAML.   |
 | `listly auth`                                  | Add Google Gemini API key.                                                                                 |
 | `listly generate <file>`                       | Generate todo lists from a prompt in a text file.                                                          |
+| `listly kmap set <file>` | Stores the specified file path as Listly’s custom key-map and automatically loads it on every run. |
+| `listly kmap clear` | Removes the specified file path, reverting Listly to the default key-map. |
+| `listly kmap show` | Outputs the file path that is stored for Listly's custom key-map. |
 
-### TUI Controls
+### TUI
 
-| Key       | Action                                                             |
-| --------- | ------------------------------------------------------------------ |
-| `j, up`   | Move down                                                          |
-| `k, down` | Move up                                                            |
-| `n`       | Create a new task                                                  |
-| `i`       | Edit current task                                                  |
-| `d`       | Delete the current task and copy it                                |
-| `space`   | Toggle a task as done or not done                                  |
-| `v`       | Toggle visual mode                                                 |
-| `d`       | Delete the selection and copy it                                   |
-| `y`       | Copy the selected item(s) or current item if no selection          |
-| `p`       | Paste the copied item(s) after the current item                    |
-| `P`       | Paste the copied item(s) before the current item                   |
-| `w`       | Save changes                                                       |
-| `q`       | Quit the application - discard all changes, requiring confirmation |
-| `{`       | Jump up                                                            |
-| `}`       | Jump down                                                          |
-| `o`       | New task after the cursor                                          |
-| `O`       | New task before the cursor                                         |
+#### Default Bindings
+
+| Action                                                             | Official Name    | Mode                            | Key      |
+| ------------------------------------------------------------------ | ---------------- | ------------------------------- | -------- |
+| Move down                                                          | Down             | Shared - Normal, Visual         | `j`      |
+| Move down 5 rows                                                   | DownFive         | Shared - Normal, Visual         | `J`      |
+| Move up                                                            | Up               | Shared - Normal, Visual         | `k`      |
+| Move up 5 rows                                                     | UpFive           | Shared - Normal, Visual         | `K`      |
+| Create a new task                                                  | NewTask          | Normal                          | `n`      |
+| Edit current task                                                  | EditTask         | Normal                          | `i`      |
+| Delete the current task and copy it                                | DeleteTask       | Normal                          | `d`      |
+| Delete selection in visual mode                                    | Delete           | Visual                          | `d`      |
+| Clear and edit current task                                        | ClearAndEdit     | Normal                          | `x`      |
+| Toggle a task as done or not done                                  | ToggleCompletion | Shared - Normal, Visual         | `space`  |
+| Toggle visual mode                                                 | EnableVisualMode | Normal                          | `v`      |
+| Copy the selected item(s) or current item if no selection          | Yank             | Shared - Normal, Visual         | `y`      |
+| Paste the copied item(s) after the current item                    | PasteAfter       | Normal                          | `p`      |
+| Paste the copied item(s) before the current item                   | PasteBefore      | Normal                          | `P`      |
+| Save changes                                                       | Write            | Normal                          | `w`      |
+| Quit the application - discard all changes, requiring confirmation | QuitWithWarning  | Normal                          | `q`      |
+| Quit without confirmation                                          | QuitNoWarning    | Shared - Normal, Visual, Insert | `ctrl+c` |
+| Jump up                                                            | JumpUp           | Shared - Normal, Visual         | `{`      |
+| Jump down                                                          | JumpDown         | Shared - Normal, Visual         | `}`      |
+| New task after the cursor                                          | NewAfter         | Normal                          | `o`      |
+| New task before the cursor                                         | NewBefore        | Normal                          | `O`      |
+| Discard changes                                                    | Discard          | Insert                          | `esc`    |
+| Save changes in insert mode                                        | Save             | Insert                          | `enter`  |
+| Back to normal mode.                                               | NormalMode       | Visual                          | `esc`    |
+
+#### Custom Bindings
+
+To import your own custom key-binds, you can use 
+
+```bash
+listly kmap set <file>
+```
+
+. The file **MUST** be a `.yaml` file that is formatted as `./assets/default_kmap.yaml` is. It **IS** case sensitive. Any commands (e.g. `QuitWithWarning`) that are not specified in your config file will be replaced with the default **UNLESS** that would create a duplicate binding in which case Listly will give you an error. Any commands that are not included in the "Official Name" column (e.g. `Quit`) will be ignored. 
 
 ### Getting a Gemini API Key
 

@@ -27,4 +27,5 @@ func SetUp() {
 	setUpExport()
 	setUpAuth()
 	setUpGenerate()
+	setUpKmap()
 }

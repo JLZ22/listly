@@ -41,6 +41,7 @@ type model struct {
 	confirmation confirmation
 	mode         string
 	vp           viewport.Model
+	kmap         KeyMap
 }
 
 var titleStyle = func() lipgloss.Style {
@@ -61,12 +62,20 @@ func NewModel(db *core.DB, listName string) (model, error) {
 		return model{}, err
 	}
 
+	// initialize text input
 	ti := textinput.New()
 	ti.Placeholder = "Task Description"
 	ti.Focus()
 	ti.CharLimit = 156
 	ti.Width = 40
 	ti.Prompt = "    > [ ] "
+
+	// load key-mappings
+	pth, _ := db.GetKmapPath() // can ignore error here because LoadKmap will use defaults with bad path
+	kmap, err := LoadKmap(pth)
+	if err != nil {
+		return model{}, err
+	}
 
 	return model{
 		data: data{
@@ -89,6 +98,7 @@ func NewModel(db *core.DB, listName string) (model, error) {
 		},
 		mode: "normal",
 		vp:   viewport.New(0, 0),
+		kmap: kmap,
 	}, nil
 }
 

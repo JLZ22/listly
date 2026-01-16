@@ -14,118 +14,41 @@ var visualHighlightStyle = lipgloss.NewStyle().
 	Foreground(lipgloss.Color("#ffffff")).   // white text
 	Bold(true)
 
-type VisualKeyMap struct {
-	Up               key.Binding
-	Down             key.Binding
-	UpFive           key.Binding
-	DownFive         key.Binding
-	NormalMode       key.Binding
-	QuitNoWarning    key.Binding
-	Delete           key.Binding
-	Yank             key.Binding
-	ToggleCompletion key.Binding
-	JumpUp           key.Binding
-	JumpDown         key.Binding
-}
-
-// ShortHelp returns keybindings to be shown in the mini help view. It's part
-// of the key.Map interface.
-func (k VisualKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Up, k.Down, k.NormalMode, k.QuitNoWarning, k.Delete, k.Yank}
-}
-
-// FullHelp returns keybindings for the expanded help view. It's part of the
-// key.Map interface.
-func (k VisualKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Up, k.Yank},         // first column
-		{k.Down, k.NormalMode}, // second column
-		{k.Delete, k.QuitNoWarning},
-		{k.JumpUp, k.JumpDown},
-	}
-}
-
-var DefaultVisualKeyMap = VisualKeyMap{
-	Up: key.NewBinding(
-		key.WithKeys("up", "k"),
-		key.WithHelp("↑/k", "up"),
-	),
-	UpFive: key.NewBinding(
-		key.WithKeys("K"),
-		key.WithHelp("K", "up 5"),
-	),
-	Down: key.NewBinding(
-		key.WithKeys("down", "j"),
-		key.WithHelp("↓/j", "down"),
-	),
-	DownFive: key.NewBinding(
-		key.WithKeys("J"),
-		key.WithHelp("J", "down 5"),
-	),
-	NormalMode: key.NewBinding(
-		key.WithKeys("esc", "v"),
-		key.WithHelp("esc/v", "normal mode"),
-	),
-	QuitNoWarning: key.NewBinding(
-		key.WithKeys("ctrl+c"),
-	),
-	Delete: key.NewBinding(
-		key.WithKeys("d", "x"),
-		key.WithHelp("d/x", "cut"),
-	),
-	Yank: key.NewBinding(
-		key.WithKeys("y"),
-		key.WithHelp("y", "yank"),
-	),
-	ToggleCompletion: key.NewBinding(
-		key.WithKeys(" "),
-		key.WithHelp("space", "mark done/not done"),
-	),
-	JumpUp: key.NewBinding(
-		key.WithKeys("{"),
-		key.WithHelp("{", "jump up"),
-	),
-	JumpDown: key.NewBinding(
-		key.WithKeys("}"),
-		key.WithHelp("}", "jump down"),
-	),
-}
-
 func handleVisualInput(msg tea.Msg, m model) (model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, DefaultVisualKeyMap.Up):
+		case key.Matches(msg, m.kmap.Visual.Up):
 			if m.cursor.row > 0 {
 				m.cursor.row--
 			}
 
-		case key.Matches(msg, DefaultVisualKeyMap.Down):
+		case key.Matches(msg, m.kmap.Visual.Down):
 			if m.cursor.row < len(m.data.list.Tasks)-1 {
 				m.cursor.row++
 			}
 
-		case key.Matches(msg, DefaultVisualKeyMap.UpFive):
+		case key.Matches(msg, m.kmap.Visual.UpFive):
 			if m.cursor.row > 4 {
 				m.cursor.row -= 4
 			} else {
 				m.cursor.row = 0
 			}
 
-		case key.Matches(msg, DefaultVisualKeyMap.DownFive):
+		case key.Matches(msg, m.kmap.Visual.DownFive):
 			if m.cursor.row < len(m.data.list.Tasks)-6 {
 				m.cursor.row += 4
 			} else {
 				m.cursor.row = len(m.data.list.Tasks) - 1
 			}
 
-		case key.Matches(msg, DefaultVisualKeyMap.NormalMode):
+		case key.Matches(msg, m.kmap.Visual.NormalMode):
 			m = visualToNormal(m)
 
-		case key.Matches(msg, DefaultVisualKeyMap.QuitNoWarning):
+		case key.Matches(msg, m.kmap.Visual.QuitNoWarning):
 			return m, tea.Quit
 
-		case key.Matches(msg, DefaultVisualKeyMap.Delete):
+		case key.Matches(msg, m.kmap.Visual.Delete):
 			copyBuff := copySelection(m)
 			m.editInfo.copyBuff = copyBuff
 
@@ -145,12 +68,12 @@ func handleVisualInput(msg tea.Msg, m model) (model, tea.Cmd) {
 			m = visualToNormal(m)
 			m.cursor.row = min(m.data.list.Info.NumTasks-1, m.cursor.row)
 
-		case key.Matches(msg, DefaultVisualKeyMap.Yank):
+		case key.Matches(msg, m.kmap.Visual.Yank):
 			copyBuff := copySelection(m)
 			m.editInfo.copyBuff = copyBuff
 			m = visualToNormal(m)
 
-		case key.Matches(msg, DefaultVisualKeyMap.ToggleCompletion):
+		case key.Matches(msg, m.kmap.Visual.ToggleCompletion):
 			start := min(m.cursor.selStart, m.cursor.row)
 			end := max(m.cursor.selStart, m.cursor.row)
 			done, notDone := core.SplitByCompletion(m.data.list)

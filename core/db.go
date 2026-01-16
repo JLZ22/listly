@@ -14,6 +14,7 @@ import (
 // 		},
 //      "config": {
 //         "api_key": "string",
+//		   "kmap_file_path": "string",
 //      },
 // 		"lists": {
 // 			"listName": {
@@ -451,6 +452,29 @@ func (db *DB) GetAPIKey() (string, error) {
 		return nil
 	})
 	return apiKey, err
+}
+
+func (db *DB) SetKmapPath(path string) error {
+	return db.BoltDB.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("config"))
+		if b == nil {
+			return fmt.Errorf("config bucket not found")
+		}
+		return b.Put([]byte("kmap_file_path"), []byte(path))
+	})
+}
+
+func (db *DB) GetKmapPath() (string, error) {
+	var path string
+	err := db.BoltDB.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("config"))
+		if b == nil {
+			return fmt.Errorf("config bucket not found")
+		}
+		path = string(b.Get([]byte("kmap_file_path")))
+		return nil
+	})
+	return path, err
 }
 
 func (db *DB) Close() error {
