@@ -4,9 +4,9 @@
 
 Each todo list resembles a Git branch: there is always a current list that you're working on (unless you have no lists), similar to how Git always has a current branch checked out. Commands that operate on the “current list” implicitly affect this active list unless another list is explicitly specified.
 
-This design allows seamless switching between multiple task contexts, enabling context-based task management or project-specific lists without losing track of your progress elsewhere. You can create new lists, switch between them, and keep tasks organized across different areas of your work or life while staying efficient with intuitive CLI commands and natural Vim-style keybindings.
+This design allows seamless switching between multiple task contexts, enabling project-specific lists without losing track of your progress elsewhere. You can create new lists, switch between them, and keep tasks organized across different areas of your work or life while staying efficient with intuitive CLI commands and natural Vim-style keybindings.
 
-`listly` also includes a Google Gemini powered list generation feature that can create task lists based on a project description passed in via a text file.
+`listly` also includes a Google Gemini powered list generation feature that can create task lists based on a project description passed in via a text file. After the fact, I independently discovered that this features bears extremely close resemblance to Claude Code's "plan mode". 
 
 ## Table of Contents
 
@@ -100,11 +100,13 @@ go install github.com/jlz22/listly@latest
 
 To import your own custom key-binds, you can use 
 
-```bash
+```
 listly kmap set <file>
 ```
 
 . The file **MUST** be a `.yaml` file that is formatted as `./assets/default_kmap.yaml` is. It **IS** case sensitive. Any commands (e.g. `QuitWithWarning`) that are not specified in your config file will be replaced with the default **UNLESS** that would create a duplicate binding in which case Listly will give you an error. Any commands that are not included in the "Official Name" column (e.g. `Quit`) will be ignored. 
+
+Note: `./assets/default_kmap.yaml` is just an example for you. The defaults will not be changed if you modify this file. `./assets/toy_kmap.yaml` is an alternate mapping where many commands have swapped key-binds. This was created for fun and is not recommended for actual use. 
 
 ### Getting a Gemini API Key
 
