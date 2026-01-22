@@ -175,7 +175,9 @@ func handleNormalInput(msg tea.Msg, m model) (model, tea.Cmd) {
 				m = pasteTasks(m, true)
 
 			case key.Matches(msg, m.kmap.Normal.Write):
-				err := m.data.db.SaveList(m.data.list)
+				err := core.WithDefaultDB(func(db *core.DB) error {
+					return db.SaveList(m.data.list)
+				})
 				if err != nil {
 					panic(err)
 				}

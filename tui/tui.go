@@ -18,7 +18,7 @@ type confirmation struct {
 
 type data struct {
 	list core.List
-	db   *core.DB
+	// db   *core.DB
 }
 
 type cursor struct {
@@ -56,12 +56,7 @@ func (m model) Init() tea.Cmd {
 }
 
 // Initialize a new model to edit the list with the given name.
-func NewModel(db *core.DB, listName string) (model, error) {
-	list, err := db.GetList(listName)
-	if err != nil {
-		return model{}, err
-	}
-
+func NewModel(list core.List, kmap KeyMap) (model, error) {
 	// initialize text input
 	ti := textinput.New()
 	ti.Placeholder = "Task Description"
@@ -70,17 +65,10 @@ func NewModel(db *core.DB, listName string) (model, error) {
 	ti.Width = 40
 	ti.Prompt = "    > [ ] "
 
-	// load key-mappings
-	pth, _ := db.GetKmapPath() // can ignore error here because LoadKmap will use defaults with bad path
-	kmap, err := LoadKmap(pth)
-	if err != nil {
-		return model{}, err
-	}
-
 	return model{
 		data: data{
 			list: list,
-			db:   db,
+			// db:   db,
 		},
 		cursor: cursor{
 			row:      0,
